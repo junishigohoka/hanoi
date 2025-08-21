@@ -3,8 +3,34 @@ import math
 from scipy.spatial.distance import squareform
 
 
+def hello_world() ->  None:
+    print("hello world")
+    return 
 
 class MutEffect:
+    """
+    A class to represent mutational effects on mean, variance, and covariance of traits.
+
+    Attributes
+    ----------
+    mean : Mean effects. 
+        Should be a 2D np.array of shape (n, L). 
+        mean[i, j] holds the effect of allele 1 at locus j on trait i.
+    var : Variance effects.
+        Should be a 2D np.array of shape (n, L).
+        var[i, j] holds the effect of allele 1 at locus j on trait i.
+    cov : Covariance effects.
+        Should be a 2D np.array of shape (choose(n, 2), L).
+        cov[i, j] holds the effect of allele 1 at locus j on the i-th trait pair.
+    n : Number of traits
+    L : Number of loci
+
+
+    Methods
+    -------
+    show() : Prints information of the MutEffect object.
+
+    """
     def __init__(self, mean: np.ndarray, var: np.ndarray, cov: np.ndarray):
         self.mean = mean
         self.var = var
