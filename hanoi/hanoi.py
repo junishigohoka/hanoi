@@ -34,9 +34,12 @@ class MutEffect:
     def __init__(self, mean: np.ndarray, var: np.ndarray, cov: np.ndarray):
         self.mean = mean
         self.var = var
-        self.cov = cov
         self.n = self.mean.shape[0]
         self.L = self.mean.shape[1]
+        if self.n == 1:
+            self.cov = np.zeros((0, 1))
+        else:
+            self.cov = cov
         for arr in [self.mean, self.var, self.cov]:
             if arr.ndim != 2:
                 raise ValueError("mean, var, and cov should be 2D")
@@ -179,7 +182,8 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, fit_func, mean_0, cov
     if n_gen == 0:
         i = 0
         while not (np.all(np.isin(genotype_cur, [0,2])) or np.all(np.isnan(genotype_cur))):
-            generations_list.append(sim_generation(mut_effect = mut_effect, 
+            generations_list.append(
+                    sim_generation(mut_effect = mut_effect, 
                                                    genotype = genotype_cur, 
                                                    mut_rate = mut_rate, 
                                                    fit_func = fit_func, 
@@ -191,7 +195,8 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, fit_func, mean_0, cov
     else:
         for i in range(n_gen):
             while not np.all(np.isnan(genotype_cur)):
-                generations_list.append(sim_generation(mut_effect = mut_effect, 
+                generations_list.append(
+                        sim_generation(mut_effect = mut_effect, 
                                                        genotype = genotype_cur, 
                                                        mut_rate = mut_rate, 
                                                        fit_func = fit_func, 
@@ -247,7 +252,9 @@ def sim_mutation(genotype, mut_rate):
 def sim_pheno(breed_val: BreedVal, mean_0, cov_0):
     z = np.zeros((breed_val.N, breed_val.n))
     for i in range(breed_val.N):
-        z[i] = np.random.multivariate_normal(mean = mean_0 + breed_val.mean[i], cov = cov_0 + breed_val.varcov[i])
+        # z[i] = mean_0 + breed_val.mean[i] + L @ np.random.standard_normal(n)
+        L = np.linalg.cholesky(cov_0 + breed_val.varcov[i])
+        z[i] = mean_0 + breed_val.mean[i] + L @ np.random.standard_normal(n)
     return z
 
 
@@ -304,5 +311,4 @@ def fit_step(boxes, z):
 
 def cov_mtx(var, cov):
     return squareform(cov) + np.diag(var)
-
 
