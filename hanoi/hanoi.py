@@ -3,9 +3,6 @@ import math
 from scipy.spatial.distance import squareform
 
 
-def hello_world() ->  None:
-    print("hello world")
-    return 
 
 class MutEffect:
     """
@@ -56,9 +53,6 @@ class MutEffect:
         print(f"Mutation effect of mean:\n{self.mean}")
         print(f"Mutation effect of variance:\n{self.var}")
         print(f"Mutation effect of covariance:\n{self.cov}")
-
-
-
 
 
 
@@ -250,11 +244,12 @@ def sim_mutation(genotype, mut_rate):
 
 
 def sim_pheno(breed_val: BreedVal, mean_0, cov_0):
-    z = np.zeros((breed_val.N, breed_val.n))
-    for i in range(breed_val.N):
-        # z[i] = mean_0 + breed_val.mean[i] + L @ np.random.standard_normal(n)
-        L = np.linalg.cholesky(cov_0 + breed_val.varcov[i])
-        z[i] = mean_0 + breed_val.mean[i] + L @ np.random.standard_normal(n)
+    # Cholesky decomposition of the covariance matrices
+    chol = jnp.linalg.cholesky(cov_0 + breed_val.varcov)
+    # Standard normal sampling
+    z_std = np.random.standard_normal((breed_val.N, breed_val.n))
+    # Convert N vectors of n standard normal variables to the N phenotype values in n dimensions
+    z = np.einsum('ijk,ik->ij', chol, z_std)
     return z
 
 
