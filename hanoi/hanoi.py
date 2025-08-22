@@ -1,7 +1,7 @@
 import numpy as np
 import math
+import jax.numpy as jnp
 from scipy.spatial.distance import squareform
-
 
 
 class MutEffect:
@@ -212,10 +212,10 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, fit_func, mean_0, cov
 
 
 def comp_breed_val(mut_effect: MutEffect, genotype: np.ndarray):
-    A_m = (1/2 * mut_effect.mean @ genotype).transpose()
-    A_v = (1/2 * mut_effect.var @ genotype).transpose()
-    A_c = (1/2 * mut_effect.cov @ genotype).transpose()
-    return BreedVal(mean = A_m, var = A_v, cov = A_c)
+    A_m_T = 1/2 * mut_effect.mean @ genotype
+    A_v_T = 1/2 * mut_effect.var @ genotype
+    A_c_T = 1/2 * mut_effect.cov @ genotype
+    return BreedVal(mean = A_m_T.T, var = A_v_T.T, cov = A_c_T.T)
 
 
 
@@ -249,7 +249,7 @@ def sim_pheno(breed_val: BreedVal, mean_0, cov_0):
     # Standard normal sampling
     z_std = np.random.standard_normal((breed_val.N, breed_val.n))
     # Convert N vectors of n standard normal variables to the N phenotype values in n dimensions
-    z = np.einsum('ijk,ik->ij', chol, z_std)
+    z = np.einsum('ijk,ik->ij', chol, z_std) + mean_0
     return z
 
 
@@ -257,20 +257,22 @@ def sim_pheno(breed_val: BreedVal, mean_0, cov_0):
 
 def sim_reproduction(popsize, genotype, fitness ):
     # number of offspring per genotype of each genotype
+    n_loci = genotype.shape[0]
     if fitness.sum() == 0:
-        n_loci = genotype.shape[0]
         genotype_next = np.full((n_loci, popsize), np.nan)
         n_offspring = np.zeros(popsize, dtype = int)
         #raise RuntimeError("Fitness of all individuals is 0")
         return genotype_next, n_offspring
     else:
-        n_offspring = np.random.multinomial(n = 2 * popsize, pvals = fitness/sum(fitness))
+        n_offspring = np.random.multinomial(n = 2 * popsize, pvals = fitness/fitness.sum())
+
         # index of 2N parents
         sam = np.repeat(range(popsize), n_offspring)
         np.random.shuffle(sam)
         # Make genotype of next parents randomly take one haplotype per locus per parent
-        genotype_next = np.array([np.sum(np.random.binomial(1, genotype[:, sam[[2 * i, 2 * i + 1]]]/2), axis = 1) for i in range(popsize)]).transpose()
-        return genotype_next, n_offspring
+        #genotype_next_T = np.array([np.sum(np.random.binomial(1, genotype[:, sam[[2 * i, 2 * i + 1]]]/2), axis = 0) for i in range(popsize)])
+        genotype_next_T = np.random.binomial(1, genotype.T[sam,:]/2 ).reshape(popsize, 2, n_loci).sum(axis = 1)
+        return genotype_next_T.T, n_offspring
 
 
 
