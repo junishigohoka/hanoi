@@ -1,3 +1,4 @@
+from .sim import sim_reproduction_c
 import numpy as np
 import math
 import jax.numpy as jnp
@@ -156,7 +157,7 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, cov_0, **kw
         w = fit_step(z=z, boxes=ranges)
     
     # Reproduction
-    genotype_next, n_offspring = sim_reproduction(popsize=popsize, genotype=genotype, fitness=w)
+    genotype_next, n_offspring = sim_reproduction_c(popsize, genotype, w)
     #if n_offspring.sum() == 0:
     #    raise RuntimeError("No individuals survived")
     genotype_next = sim_mutation(genotype=genotype_next, mut_rate=mut_rate) # This still returns nans if it is nans

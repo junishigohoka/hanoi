@@ -2,7 +2,7 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
-def sim_reproduction_c(int popsize, cnp.float64_t[:, :] genotype, cnp.float64_t[:] fitness):
+cpdef tuple sim_reproduction_c(int popsize, cnp.float64_t[:, :] genotype, cnp.float64_t[:] fitness):
 
     cdef int n_loci = genotype.shape[0]
     cdef cnp.float64_t[:, :] genotype_next
@@ -16,17 +16,14 @@ def sim_reproduction_c(int popsize, cnp.float64_t[:, :] genotype, cnp.float64_t[
 
     # When at least one individuals reproduces
     # Total fitness
-    #cdef cnp.float64_t fitness_sum = np.sum(fitness)
     # Declare variables
     cdef cnp.float64_t[:] pvals
     cdef cnp.int64_t[:] sam
-    cdef int i, j, k, idx
+    cdef int i, j, idx
     cdef cnp.float64_t bit1, bit2
     cdef cnp.float64_t fitness_sum = 0
     for i in range(popsize):
         fitness_sum += fitness[i]
-    #cdef cnp.int64_t[:,:] genotype_next_T = np.empty(genotype.shape, dtype = np.int64)
-    #cdef int i
     # compute binomial parameter for each individual
     pvals = np.empty(fitness.shape[0], dtype=np.float64)
     for i in range(fitness.shape[0]):
