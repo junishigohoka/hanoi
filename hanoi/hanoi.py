@@ -34,7 +34,7 @@ class MutEffect:
         self.n = self.mean.shape[0]
         self.L = self.mean.shape[1]
         if self.n == 1:
-            self.cov = np.zeros((0, 1))
+            self.cov = np.zeros((0, self.L))
         else:
             self.cov = cov
         for arr in [self.mean, self.var, self.cov]:
@@ -176,14 +176,15 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, fit_func, mean_0, cov
     if n_gen == 0:
         i = 0
         while not (np.all(np.isin(genotype_cur, [0,2])) or np.all(np.isnan(genotype_cur))):
+        #while np.any(genotype_cur == 1) or not np.isnan(genotype_cur[0,0]):
             generations_list.append(
                     sim_generation(mut_effect = mut_effect, 
-                                                   genotype = genotype_cur, 
-                                                   mut_rate = mut_rate, 
-                                                   fit_func = fit_func, 
-                                                   mean_0 = mean_0,
-                                                   cov_0 = cov_0,
-                                                   **kwargs))
+                                   genotype = genotype_cur, 
+                                   mut_rate = mut_rate, 
+                                   fit_func = fit_func, 
+                                   mean_0 = mean_0,
+                                   cov_0 = cov_0,
+                                   **kwargs))
             genotype_cur = generations_list[-1].genotype_next
             i+=1
     else:
@@ -191,12 +192,12 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, fit_func, mean_0, cov
             while not np.all(np.isnan(genotype_cur)):
                 generations_list.append(
                         sim_generation(mut_effect = mut_effect, 
-                                                       genotype = genotype_cur, 
-                                                       mut_rate = mut_rate, 
-                                                       fit_func = fit_func, 
-                                                       mean_0 = mean_0,
-                                                       cov_0 = cov_0,
-                                                       **kwargs))
+                                       genotype = genotype_cur, 
+                                       mut_rate = mut_rate, 
+                                       fit_func = fit_func, 
+                                       mean_0 = mean_0,
+                                       cov_0 = cov_0,
+                                       **kwargs))
                 genotype_cur = generations_list[-1].genotype_next
     generations = Generations(genotype = np.array([generation.genotype for generation in generations_list]), 
                               genotype_next = np.array([generation.genotype_next for generation in generations_list]), 
@@ -205,7 +206,7 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, fit_func, mean_0, cov
                               fitness = np.array([generation.fitness for generation in generations_list]),
                               n_offspring = np.array([generation.n_offspring for generation in generations_list]),
                               n_gen = i
-                             )
+                              )
     return generations
 
 
@@ -308,4 +309,5 @@ def fit_step(boxes, z):
 
 def cov_mtx(var, cov):
     return squareform(cov) + np.diag(var)
+
 
