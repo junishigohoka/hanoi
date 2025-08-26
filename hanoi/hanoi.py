@@ -62,19 +62,22 @@ class BreedVal:
         self.mean = mean
         self.var = var 
         self.cov = cov 
-        self.N = mean.shape[0]
-        self.n = mean.shape[1]
-        self.varcov = np.array([cov_mtx(var = self.var[i], cov = self.cov[i]) for i in range(self.N)])
+        self.N = mean.shape[1]
+        self.n = mean.shape[0]
+        if self.n == 1:
+            self.varcov = np.empty((0, self.N))
+        else:
+            self.varcov = np.array([cov_mtx(var = self.var[i], cov = self.cov[i]) for i in range(self.N)])
         for arr in (self.var, self.cov):
             if arr.ndim != 2:
                 raise ValueError("mean, var, and cov must be 2D arrays.")
-        Ns = [self.var.shape[0], self.cov.shape[0]]
+        Ns = [self.var.shape[1], self.cov.shape[1]]
         if not all(N == self.N for N in Ns):
-            raise ValueError("mean, var, and cov must have the same number of rows (N)")
-        if self.n != var.shape[1]:
-            raise ValueError("mean and var must have the same number of columns (n)")
-        if math.comb(self.n, 2) != self.cov.shape[1]:
-            raise ValueError("The number of columns of cov should match the number of column of mean choose 2")
+            raise ValueError("mean, var, and cov must have the same number of columns (N)")
+        if self.n != var.shape[0]:
+            raise ValueError("mean and var must have the same number of rows (n)")
+        if math.comb(self.n, 2) != self.cov.shape[0]:
+            raise ValueError("The number of rows of cov should match the number of rows of mean choose 2")
     def show(self):
         print(f"Number of traits:\n {self.n}")
         print(f"Number of trait pairs:\n {math.comb(self.n, 2)}")
@@ -214,10 +217,10 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, fit_func, mean_0, cov
 
 
 def comp_breed_val(mut_effect: MutEffect, genotype: np.ndarray):
-    A_m_T = 1/2 * mut_effect.mean @ genotype
-    A_v_T = 1/2 * mut_effect.var @ genotype
-    A_c_T = 1/2 * mut_effect.cov @ genotype
-    return BreedVal(mean = A_m_T.T, var = A_v_T.T, cov = A_c_T.T)
+    A_m = 1/2 * mut_effect.mean @ genotype
+    A_v = 1/2 * mut_effect.var @ genotype
+    A_c = 1/2 * mut_effect.cov @ genotype
+    return BreedVal(mean = A_m, var = A_v, cov = A_c)
 
 
 
@@ -246,6 +249,9 @@ def sim_mutation(genotype, mut_rate):
 
 
 def sim_pheno(breed_val: BreedVal, mean_0, cov_0):
+    if breed_val.n == 1:
+        z = np.random.normal(mean_0 + breed_val.mean, cov_0 + breed_val.var)
+        return z
     # Cholesky decomposition of the covariance matrices
     chol = jnp.linalg.cholesky(cov_0 + breed_val.varcov)
     # Standard normal sampling
@@ -280,7 +286,7 @@ def sim_reproduction(popsize, genotype, fitness ):
 
 
 def fit_neutral(z):
-    return np.repeat(np.array(1.0), len(z))
+    return np.ones(z.shape[])
 
 
 def fit_gaus(sigma, z_opt, z):

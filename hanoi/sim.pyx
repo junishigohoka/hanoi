@@ -9,7 +9,11 @@ cpdef tuple sim_reproduction_c(int popsize, cnp.float64_t[:, :] genotype, cnp.fl
     cdef cnp.int64_t[:] n_offspring
 
     # when no individuals reproduce
-    if np.sum(fitness) == 0:
+    cdef cnp.float64_t fitness_sum = 0
+    cdef int i, j, idx
+    for i in range(popsize):
+        fitness_sum += fitness[i]
+    if fitness_sum == 0:
         genotype_next = np.full((n_loci, popsize), np.nan)
         n_offspring = np.zeros(popsize, dtype = int)
         return np.asarray(genotype_next), np.asarray(n_offspring)
@@ -19,11 +23,7 @@ cpdef tuple sim_reproduction_c(int popsize, cnp.float64_t[:, :] genotype, cnp.fl
     # Declare variables
     cdef cnp.float64_t[:] pvals
     cdef cnp.int64_t[:] sam
-    cdef int i, j, idx
     cdef cnp.float64_t bit1, bit2
-    cdef cnp.float64_t fitness_sum = 0
-    for i in range(popsize):
-        fitness_sum += fitness[i]
     # compute binomial parameter for each individual
     pvals = np.empty(fitness.shape[0], dtype=np.float64)
     for i in range(fitness.shape[0]):
