@@ -1,4 +1,4 @@
-from .sim import sim_reproduction
+#from .sim import sim_reproduction
 import numpy as np
 import math
 import jax.numpy as jnp
@@ -158,15 +158,15 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, cov_0, **kw
     if fit_func == "fit_neutral":
         w = fit_neutral(z=z)
     if fit_func == "fit_step":
-        ranges = kwargs.get('boxes')
-        w = fit_step(z=z, boxes=ranges)
+        boxes = kwargs.get('boxes')
+        w = fit_step(z=z, boxes=boxes)
     
     # Reproduction
     genotype_next, n_offspring = sim_reproduction(popsize, genotype, w)
     #if n_offspring.sum() == 0:
     #    raise RuntimeError("No individuals survived")
-    genotype_next = sim_mutation(genotype=genotype_next, mut_rate=mut_rate) # This still returns nans if it is nans
-
+    if mut_rate > 0:
+        genotype_next = sim_mutation(genotype=genotype_next, mut_rate=mut_rate) # This still returns nans if it is nans
     return Generation(genotype = genotype, 
                       genotype_next = genotype_next,
                       breed_val = A, 
@@ -195,16 +195,17 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, fit_func, mean_0, cov
             i+=1
     else:
         for i in range(n_gen):
-            while not np.all(np.isnan(genotype_cur)):
-                generations_list.append(
-                        sim_generation(mut_effect = mut_effect, 
-                                       genotype = genotype_cur, 
-                                       mut_rate = mut_rate, 
-                                       fit_func = fit_func, 
-                                       mean_0 = mean_0,
-                                       cov_0 = cov_0,
-                                       **kwargs))
-                genotype_cur = generations_list[-1].genotype_next
+            if np.all(np.isnan(genotype_cur)):
+                break
+            generations_list.append(
+                    sim_generation(mut_effect = mut_effect, 
+                                   genotype = genotype_cur, 
+                                   mut_rate = mut_rate, 
+                                   fit_func = fit_func, 
+                                   mean_0 = mean_0,
+                                   cov_0 = cov_0,
+                                   **kwargs))
+            genotype_cur = generations_list[-1].genotype_next
     generations = Generations(genotype = np.array([generation.genotype for generation in generations_list]), 
                               genotype_next = np.array([generation.genotype_next for generation in generations_list]), 
                               breed_val = np.array([generation.breed_val for generation in generations_list]),
@@ -265,24 +266,25 @@ def sim_pheno(breed_val: BreedVal, mean_0, cov_0):
 
 
 
-#def sim_reproduction(popsize, genotype, fitness ):
-#    # number of offspring per genotype of each genotype
-#    n_loci = genotype.shape[0]
-#    if fitness.sum() == 0:
-#        genotype_next = np.full((n_loci, popsize), np.nan)
-#        n_offspring = np.zeros(popsize, dtype = int)
-#        #raise RuntimeError("Fitness of all individuals is 0")
-#        return genotype_next, n_offspring
-#    else:
-#        n_offspring = np.random.multinomial(n = 2 * popsize, pvals = fitness/fitness.sum())
-#
-#        # index of 2N parents
-#        sam = np.repeat(range(popsize), n_offspring)
-#        np.random.shuffle(sam)
-#        # Make genotype of next parents randomly take one haplotype per locus per parent
-#        #genotype_next_T = np.array([np.sum(np.random.binomial(1, genotype[:, sam[[2 * i, 2 * i + 1]]]/2), axis = 0) for i in range(popsize)])
-#        genotype_next_T = np.random.binomial(1, genotype.T[sam,:]/2 ).reshape(popsize, 2, n_loci).sum(axis = 1)
-#        return genotype_next_T.T, n_offspring
+def sim_reproduction(popsize, genotype, fitness ):
+    # number of offspring per genotype of each genotype
+    n_loci = genotype.shape[0]
+    if fitness.sum() == 0:
+        genotype_next = np.full((n_loci, popsize), np.nan)
+        n_offspring = np.zeros(popsize, dtype = int)
+        #raise RuntimeError("Fitness of all individuals is 0")
+        return genotype_next, n_offspring
+    n_offspring = np.random.multinomial(n = 2 * popsize, pvals = fitness/fitness.sum())
+
+    # index of 2N parents
+    sam = np.repeat(range(popsize), n_offspring)
+    # Shuffle the 2N parents
+    np.random.shuffle(sam)
+    # Reshape parents so that they are in pairs
+    sam = sam.reshape(popsize, 2)
+    # Mating
+    genotype_next = np.random.binomial(1, genotype[:,sam]/2 ).sum(axis = 2)
+    return genotype_next, n_offspring
 
 
 
