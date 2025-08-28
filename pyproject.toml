@@ -12,7 +12,8 @@ license = { text = "MIT" }
 dependencies = [
         "numpy>=2.0",
         "scipy>1.15",
-        "Cython>=0.29"
+        "Cython>=0.29",
+        "jax"
 ]
 
 [tool.setuptools.packages.find]

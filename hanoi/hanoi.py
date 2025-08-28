@@ -1,9 +1,8 @@
-from .sim import *
+#from .sim import sim_reproduction
 import numpy as np
 import math
 import jax.numpy as jnp
 from scipy.spatial.distance import squareform
-import scipy
 
 
 class MutEffect:
@@ -13,13 +12,13 @@ class MutEffect:
     Attributes
     ----------
     mean : Mean effects. 
-        Should be a 2D np.array of shape (L, n). 
+        Should be a 2D np.array of shape (n, L). 
         mean[i, j] holds the effect of allele 1 at locus j on trait i.
     var : Variance effects.
-        Should be a 2D np.array of shape (L, n).
+        Should be a 2D np.array of shape (n, L).
         var[i, j] holds the effect of allele 1 at locus j on trait i.
     cov : Covariance effects.
-        Should be a 2D np.array of shape (L, choose(n, 2)).
+        Should be a 2D np.array of shape (choose(n, 2), L).
         cov[i, j] holds the effect of allele 1 at locus j on the i-th trait pair.
     n : Number of traits
     L : Number of loci
@@ -33,20 +32,22 @@ class MutEffect:
     def __init__(self, mean: np.ndarray, var: np.ndarray, cov: np.ndarray):
         self.mean = mean
         self.var = var
-        self.n = self.mean.shape[1]
-        self.L = self.mean.shape[0]
+        self.n = self.mean.shape[0]
+        self.L = self.mean.shape[1]
         if self.n == 1:
-            self.cov = np.zeros((self.L, 0))
+            self.cov = np.zeros((0, self.L))
         else:
             self.cov = cov
         for arr in [self.mean, self.var, self.cov]:
             if arr.ndim != 2:
                 raise ValueError("mean, var, and cov should be 2D")
-        if self.n != self.var.shape[1]:
-            raise ValueError("mean and var should have the same number of cols (n)")
-        if self.L != self.var.shape[0]:
-            raise ValueError("mean and var should have the same number of rows (L)")
-        if self.cov.shape[1] != math.comb(self.n, 2):
+        if self.n != self.var.shape[0]:
+            raise ValueError("mean and var should have the same number of rows (n)")
+        if self.L != self.var.shape[1]:
+            raise ValueError("mean and var should have the same number of columns (L)")
+        if self.cov.shape[0] != math.comb(self.n, 2):
+            print(self.cov.shape[0])
+            print(math.comb(self.n, 2))
             raise ValueError("The number of rows of cov should be n choose 2")
     def show(self):
         print(f"Number of traits n:\n{self.n}")
@@ -63,27 +64,30 @@ class BreedVal:
         self.mean = mean
         self.var = var 
         self.cov = cov 
-        self.N = mean.shape[0]
-        self.n = mean.shape[1]
-        self.varcov = np.array([cov_mtx(var = self.var[i], cov = self.cov[i]) for i in range(self.N)])
-        #for arr in (self.var, self.cov):
-        #    if arr.ndim != 2:
-        #        raise ValueError("mean, var, and cov must be 2D arrays.")
-        #Ns = [self.var.shape[0], self.cov.shape[0]]
-        #if not all(N == self.N for N in Ns):
-        #    raise ValueError("mean, var, and cov must have the same number of rows (N)")
-        #if self.n != var.shape[1]:
-        #    raise ValueError("mean and var must have the same number of columns (n)")
-        #if math.comb(self.n, 2) != self.cov.shape[1]:
-        #    raise ValueError("The number of columns of cov should match the number of column of mean choose 2")
-#    def show(self):
-#        print(f"Number of traits:\n {self.n}")
-#        print(f"Number of trait pairs:\n {math.comb(self.n, 2)}")
-#        print(f"Number of individuals:\n {self.N}")
-#        print(f"Breeding value of mean:\n {self.mean}")
-#        print(f"Breeding value of variance:\n {self.var}")
-#        print(f"Breeding value of covariance:\n {self.cov}")
-#        print(f"Covariance matrices of breeding values :\n {self.varcov}")
+        self.N = mean.shape[1]
+        self.n = mean.shape[0]
+        if self.n == 1:
+            self.varcov = np.empty((0, self.N))
+        else:
+            self.varcov = np.array([cov_mtx(var = self.var[i], cov = self.cov[i]) for i in range(self.N)])
+        for arr in (self.var, self.cov):
+            if arr.ndim != 2:
+                raise ValueError("mean, var, and cov must be 2D arrays.")
+        Ns = [self.var.shape[1], self.cov.shape[1]]
+        if not all(N == self.N for N in Ns):
+            raise ValueError("mean, var, and cov must have the same number of columns (N)")
+        if self.n != var.shape[0]:
+            raise ValueError("mean and var must have the same number of rows (n)")
+        if math.comb(self.n, 2) != self.cov.shape[0]:
+            raise ValueError("The number of rows of cov should match the number of rows of mean choose 2")
+    def show(self):
+        print(f"Number of traits:\n {self.n}")
+        print(f"Number of trait pairs:\n {math.comb(self.n, 2)}")
+        print(f"Number of individuals:\n {self.N}")
+        print(f"Breeding value of mean:\n {self.mean}")
+        print(f"Breeding value of variance:\n {self.var}")
+        print(f"Breeding value of covariance:\n {self.cov}")
+        print(f"Covariance matrices of breeding values :\n {self.varcov}")
 
 
 class Generation:
@@ -101,9 +105,9 @@ class Generation:
         self.fitness = fitness
         self.n_offspring = n_offspring
     def allele_freqs(self):
-        return (self.genotype.mean(axis=0)/2)
+        return (self.genotype.mean(axis=1)/2)[np.newaxis, :]
     def allele_freqs_next(self):
-        return (self.genotype_next.mean(axis=0)/2)
+        return (self.genotype_next.mean(axis=1)/2)[np.newaxis, :]
 
 
 class Generations(Generation):
@@ -112,10 +116,10 @@ class Generations(Generation):
         self.n_gen = n_gen
     def allele_freqs(self):
         #return np.array([genotype.mean(axis=1)/2 for genotype in generations.genotype_next])
-        return np.array([genotype.mean(axis=0)/2 for genotype in self.genotype])
+        return np.array([genotype.mean(axis=1)/2 for genotype in self.genotype])
     def allele_freqs_next(self):
         #return np.array([genotype.mean(axis=1)/2 for genotype in generations.genotype_next])
-        return np.array([genotype_next.mean(axis=0)/2 for genotype_next in self.genotype_next])
+        return np.array([genotype_next.mean(axis=1)/2 for genotype_next in self.genotype_next])
     def generation(self, t):
         return Generation(genotype = self.genotype[t], 
                           breed_val = self.breed_val[t], 
@@ -138,14 +142,13 @@ class Generations(Generation):
 
 
 def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, cov_0, **kwargs):
-    popsize = genotype.shape[0]
+    popsize = genotype.shape[1]
     
     # Breeding value
     A = comp_breed_val(mut_effect=mut_effect, genotype=genotype)
     
     # Phenotype
-    #z = sim_pheno(breed_val=A, mean_0=mean_0, cov_0 = cov_0)
-    z = sim_pheno_c(breed_val=A, mean_0=mean_0, cov_0 = cov_0)
+    z = sim_pheno(breed_val=A, mean_0=mean_0, cov_0 = cov_0)
     
     # Phenotype to fitness
     if fit_func == "fit_gaus":
@@ -155,15 +158,15 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, cov_0, **kw
     if fit_func == "fit_neutral":
         w = fit_neutral(z=z)
     if fit_func == "fit_step":
-        ranges = kwargs.get('boxes')
-        w = fit_step(z=z, boxes=ranges)
+        boxes = kwargs.get('boxes')
+        w = fit_step(z=z, boxes=boxes)
     
     # Reproduction
     genotype_next, n_offspring = sim_reproduction(popsize, genotype, w)
     #if n_offspring.sum() == 0:
     #    raise RuntimeError("No individuals survived")
-    genotype_next = sim_mutation(genotype=genotype_next, mut_rate=mut_rate) # This still returns nans if it is nans
-
+    if mut_rate > 0:
+        genotype_next = sim_mutation(genotype=genotype_next, mut_rate=mut_rate) # This still returns nans if it is nans
     return Generation(genotype = genotype, 
                       genotype_next = genotype_next,
                       breed_val = A, 
@@ -192,16 +195,17 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, fit_func, mean_0, cov
             i+=1
     else:
         for i in range(n_gen):
-            while not np.all(np.isnan(genotype_cur)):
-                generations_list.append(
-                        sim_generation(mut_effect = mut_effect, 
-                                       genotype = genotype_cur, 
-                                       mut_rate = mut_rate, 
-                                       fit_func = fit_func, 
-                                       mean_0 = mean_0,
-                                       cov_0 = cov_0,
-                                       **kwargs))
-                genotype_cur = generations_list[-1].genotype_next
+            if np.all(np.isnan(genotype_cur)):
+                break
+            generations_list.append(
+                    sim_generation(mut_effect = mut_effect, 
+                                   genotype = genotype_cur, 
+                                   mut_rate = mut_rate, 
+                                   fit_func = fit_func, 
+                                   mean_0 = mean_0,
+                                   cov_0 = cov_0,
+                                   **kwargs))
+            genotype_cur = generations_list[-1].genotype_next
     generations = Generations(genotype = np.array([generation.genotype for generation in generations_list]), 
                               genotype_next = np.array([generation.genotype_next for generation in generations_list]), 
                               breed_val = np.array([generation.breed_val for generation in generations_list]),
@@ -216,12 +220,9 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, fit_func, mean_0, cov
 
 
 def comp_breed_val(mut_effect: MutEffect, genotype: np.ndarray):
-    A_m = 1/2 * genotype @ mut_effect.mean
-    A_v = 1/2 * genotype @ mut_effect.var
-    A_c = 1/2 * genotype @ mut_effect.cov
-    #A_m = 1/2 * mut_effect.mean @ genotype
-    #A_v = 1/2 * mut_effect.var @ genotype
-    #A_c = 1/2 * mut_effect.cov @ genotype
+    A_m = 1/2 * mut_effect.mean @ genotype
+    A_v = 1/2 * mut_effect.var @ genotype
+    A_c = 1/2 * mut_effect.cov @ genotype
     return BreedVal(mean = A_m, var = A_v, cov = A_c)
 
 
@@ -229,8 +230,6 @@ def comp_breed_val(mut_effect: MutEffect, genotype: np.ndarray):
 
 
 def sim_mutation(genotype, mut_rate):
-    if mut_rate == 0:
-        return genotype
     # Compute transition matrix
     transition_matrix = np.array([[(1 - mut_rate)**2, 2 * mut_rate * (1 - mut_rate), mut_rate**2],
                                   [mut_rate * (1 - mut_rate), (1 - mut_rate)**2 + mut_rate**2, mut_rate * (1 - mut_rate)],
@@ -254,7 +253,7 @@ def sim_mutation(genotype, mut_rate):
 
 def sim_pheno(breed_val: BreedVal, mean_0, cov_0):
     if breed_val.n == 1:
-        z = np.random.normal(mean_0[0] + breed_val.mean[:,0], cov_0[0] + breed_val.var[:,0])
+        z = np.random.normal(mean_0 + breed_val.mean, cov_0 + breed_val.var)
         return z
     # Cholesky decomposition of the covariance matrices
     chol = jnp.linalg.cholesky(cov_0 + breed_val.varcov)
@@ -269,50 +268,65 @@ def sim_pheno(breed_val: BreedVal, mean_0, cov_0):
 
 def sim_reproduction(popsize, genotype, fitness ):
     # number of offspring per genotype of each genotype
-    n_loci = genotype.shape[1]
+    n_loci = genotype.shape[0]
     if fitness.sum() == 0:
-        genotype_next = np.full((popsize, n_loci), np.nan)
+        genotype_next = np.full((n_loci, popsize), np.nan)
         n_offspring = np.zeros(popsize, dtype = int)
         #raise RuntimeError("Fitness of all individuals is 0")
         return genotype_next, n_offspring
-    else:
-        n_offspring = np.random.multinomial(n = 2 * popsize, pvals = fitness/fitness.sum())
+    n_offspring = np.random.multinomial(n = 2 * popsize, pvals = fitness/fitness.sum())
 
-        # index of 2N parents
-        sam = np.repeat(range(popsize), n_offspring)
-        np.random.shuffle(sam)
-        # Make genotype of next parents randomly take one haplotype per locus per parent
-        #genotype_next_T = np.array([np.sum(np.random.binomial(1, genotype[:, sam[[2 * i, 2 * i + 1]]]/2), axis = 0) for i in range(popsize)])
-        genotype_next = np.random.binomial(1, genotype[sam,:]/2 ).reshape(popsize, 2, n_loci).sum(axis = 1)
-        return genotype_next, n_offspring
+    # index of 2N parents
+    sam = np.repeat(range(popsize), n_offspring)
+    # Shuffle the 2N parents
+    np.random.shuffle(sam)
+    # Reshape parents so that they are in pairs
+    sam = sam.reshape(popsize, 2)
+    # Mating
+    genotype_next = np.random.binomial(1, genotype[:,sam]/2 ).sum(axis = 2)
+    return genotype_next, n_offspring
 
 
 
 
 def fit_neutral(z):
-    return np.ones(z.shape[0])
+    return np.ones(z.shape[1], dtype = np.float64)
 
 
 def fit_gaus(sigma, z_opt, z):
-    return np.array([np.exp(-(np.linalg.norm(z_i - z_opt))**2/(2 * sigma**2)) for z_i in z])
+    """
+    sigma: A scalar specifying SD around the peak
+    z_opt: (n,) array specifying the coordinate of the peak in the n dimensional phenotypic space
+    z:      (n, N) array representing n-dimensional phenotypes of N individuals.
+    Returns: (N,) array representing fitness of N individuals
+    """
+    return np.array([np.exp(-(np.linalg.norm(z[:, i] - z_opt))**2/(2 * sigma**2)) for i in range(z.shape[1])])
 
 
 def fit_multimodal(sigma, p, z_opt, z):
-    w = np.zeros(len(z))
+    """
+    sigma:  (n_peaks,) array specifying SD of n_peak peaks
+    p:      (n_peaks,) array specifying relative height of peaks
+    z_opt:  (n_peaks, n) array specifying the coordinate of n_peak peaks in the n-dimensional phenotype space
+    z:      (n, N) array representing n-dimensional phenotypes of N individuals.
+    Returns: (N,) array representing fitness of N individuals
+    """
+    w = np.zeros(z.shape[1])
     # Loop over peaks
-    for i in range(len(sigma)):
-        w += p[i] * fit_gaus(sigma[i], z_opt, z)
+    for i in range(len(p)):
+        w += p[i] * fit_gaus(sigma = sigma[i], z_opt = z_opt[i,:], z = z)
     return w
 
 
 def fit_step(boxes, z):
     """
-    z:     (N, n) array of n-dimensional phenotypes of N individuals.
-    boxes: (m, 2, n) array of m boxes, where boxes[i, 0] = lower bounds, boxes[i, 1] = upper bounds. Fitness of phenotype within boxes is 1.
+    z:     (n, N) array of n-dimensional phenotypes of N individuals.
+    boxes: (m, 2, n) array of m boxes, where boxes[i, 0, :] = lower bounds, boxes[i, 1, :] = upper bounds of i-th box. Fitness of phenotype within boxes is 1.
     Returns: (N,) array of 0 or 1
     """
+    z_T = z.T
     return np.any(
-        np.all((z[:, None, :] >= boxes[:, 0, :]) & (z[:, None, :] <= boxes[:, 1, :]), axis=2),
+        np.all((z_T[:, None, :] >= boxes[:, 0, :]) & (z_T[:, None, :] <= boxes[:, 1, :]), axis=2),
         axis=1
     ).astype(float)
 
