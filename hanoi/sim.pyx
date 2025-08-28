@@ -2,7 +2,7 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
-cpdef tuple sim_reproduction_c(int popsize, cnp.float64_t[:, :] genotype, cnp.float64_t[:] fitness):
+cpdef tuple sim_reproduction(int popsize, cnp.float64_t[:, :] genotype, cnp.float64_t[:] fitness):
 
     cdef int n_loci = genotype.shape[0]
     cdef cnp.float64_t[:, :] genotype_next

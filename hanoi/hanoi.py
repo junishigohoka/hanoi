@@ -1,4 +1,4 @@
-from .sim import sim_reproduction_c
+from .sim import sim_reproduction
 import numpy as np
 import math
 import jax.numpy as jnp
@@ -46,6 +46,8 @@ class MutEffect:
         if self.L != self.var.shape[1]:
             raise ValueError("mean and var should have the same number of columns (L)")
         if self.cov.shape[0] != math.comb(self.n, 2):
+            print(self.cov.shape[0])
+            print(math.comb(self.n, 2))
             raise ValueError("The number of rows of cov should be n choose 2")
     def show(self):
         print(f"Number of traits n:\n{self.n}")
@@ -160,7 +162,7 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, cov_0, **kw
         w = fit_step(z=z, boxes=ranges)
     
     # Reproduction
-    genotype_next, n_offspring = sim_reproduction_c(popsize, genotype, w)
+    genotype_next, n_offspring = sim_reproduction(popsize, genotype, w)
     #if n_offspring.sum() == 0:
     #    raise RuntimeError("No individuals survived")
     genotype_next = sim_mutation(genotype=genotype_next, mut_rate=mut_rate) # This still returns nans if it is nans
@@ -263,52 +265,66 @@ def sim_pheno(breed_val: BreedVal, mean_0, cov_0):
 
 
 
-def sim_reproduction(popsize, genotype, fitness ):
-    # number of offspring per genotype of each genotype
-    n_loci = genotype.shape[0]
-    if fitness.sum() == 0:
-        genotype_next = np.full((n_loci, popsize), np.nan)
-        n_offspring = np.zeros(popsize, dtype = int)
-        #raise RuntimeError("Fitness of all individuals is 0")
-        return genotype_next, n_offspring
-    else:
-        n_offspring = np.random.multinomial(n = 2 * popsize, pvals = fitness/fitness.sum())
-
-        # index of 2N parents
-        sam = np.repeat(range(popsize), n_offspring)
-        np.random.shuffle(sam)
-        # Make genotype of next parents randomly take one haplotype per locus per parent
-        #genotype_next_T = np.array([np.sum(np.random.binomial(1, genotype[:, sam[[2 * i, 2 * i + 1]]]/2), axis = 0) for i in range(popsize)])
-        genotype_next_T = np.random.binomial(1, genotype.T[sam,:]/2 ).reshape(popsize, 2, n_loci).sum(axis = 1)
-        return genotype_next_T.T, n_offspring
+#def sim_reproduction(popsize, genotype, fitness ):
+#    # number of offspring per genotype of each genotype
+#    n_loci = genotype.shape[0]
+#    if fitness.sum() == 0:
+#        genotype_next = np.full((n_loci, popsize), np.nan)
+#        n_offspring = np.zeros(popsize, dtype = int)
+#        #raise RuntimeError("Fitness of all individuals is 0")
+#        return genotype_next, n_offspring
+#    else:
+#        n_offspring = np.random.multinomial(n = 2 * popsize, pvals = fitness/fitness.sum())
+#
+#        # index of 2N parents
+#        sam = np.repeat(range(popsize), n_offspring)
+#        np.random.shuffle(sam)
+#        # Make genotype of next parents randomly take one haplotype per locus per parent
+#        #genotype_next_T = np.array([np.sum(np.random.binomial(1, genotype[:, sam[[2 * i, 2 * i + 1]]]/2), axis = 0) for i in range(popsize)])
+#        genotype_next_T = np.random.binomial(1, genotype.T[sam,:]/2 ).reshape(popsize, 2, n_loci).sum(axis = 1)
+#        return genotype_next_T.T, n_offspring
 
 
 
 
 def fit_neutral(z):
-    return np.ones(z.shape[])
+    return np.ones(z.shape[1], dtype = np.float64)
 
 
 def fit_gaus(sigma, z_opt, z):
-    return np.array([np.exp(-(np.linalg.norm(z_i - z_opt))**2/(2 * sigma**2)) for z_i in z])
+    """
+    sigma: A scalar specifying SD around the peak
+    z_opt: (n,) array specifying the coordinate of the peak in the n dimensional phenotypic space
+    z:      (n, N) array representing n-dimensional phenotypes of N individuals.
+    Returns: (N,) array representing fitness of N individuals
+    """
+    return np.array([np.exp(-(np.linalg.norm(z[:, i] - z_opt))**2/(2 * sigma**2)) for i in range(z.shape[1])])
 
 
 def fit_multimodal(sigma, p, z_opt, z):
-    w = np.zeros(len(z))
+    """
+    sigma:  (n_peaks,) array specifying SD of n_peak peaks
+    p:      (n_peaks,) array specifying relative height of peaks
+    z_opt:  (n_peaks, n) array specifying the coordinate of n_peak peaks in the n-dimensional phenotype space
+    z:      (n, N) array representing n-dimensional phenotypes of N individuals.
+    Returns: (N,) array representing fitness of N individuals
+    """
+    w = np.zeros(z.shape[1])
     # Loop over peaks
-    for i in range(len(sigma)):
-        w += p[i] * fit_gaus(sigma[i], z_opt, z)
+    for i in range(len(p)):
+        w += p[i] * fit_gaus(sigma = sigma[i], z_opt = z_opt[i,:], z = z)
     return w
 
 
 def fit_step(boxes, z):
     """
-    z:     (N, n) array of n-dimensional phenotypes of N individuals.
-    boxes: (m, 2, n) array of m boxes, where boxes[i, 0] = lower bounds, boxes[i, 1] = upper bounds. Fitness of phenotype within boxes is 1.
+    z:     (n, N) array of n-dimensional phenotypes of N individuals.
+    boxes: (m, 2, n) array of m boxes, where boxes[i, 0, :] = lower bounds, boxes[i, 1, :] = upper bounds of i-th box. Fitness of phenotype within boxes is 1.
     Returns: (N,) array of 0 or 1
     """
+    z_T = z.T
     return np.any(
-        np.all((z[:, None, :] >= boxes[:, 0, :]) & (z[:, None, :] <= boxes[:, 1, :]), axis=2),
+        np.all((z_T[:, None, :] >= boxes[:, 0, :]) & (z_T[:, None, :] <= boxes[:, 1, :]), axis=2),
         axis=1
     ).astype(float)
 
