@@ -2,7 +2,7 @@ from .hanoi import *
 from .fitness import *
 import numpy as np
 import math
-import jax.numpy as jnp
+#import jax.numpy as jnp
 from scipy.spatial.distance import squareform
 
 
