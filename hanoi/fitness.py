@@ -16,7 +16,7 @@ def fit_gaus(sigma, z_opt, z):
     z:      (N, n) array representing n-dimensional phenotypes of N individuals.
     Returns: (N,) array representing fitness of N individuals
     """
-    return np.array([np.exp(-(np.linalg.norm(z[i] - z_opt))**2/(2 * sigma**2)) for i in range(z.shape[0])])
+    return np.array([np.exp(-(np.linalg.norm(z_i - z_opt))**2/(2 * sigma**2)) for z_i in z])
 
 
 def fit_multimodal(sigma, p, z_opt, z):
@@ -30,7 +30,7 @@ def fit_multimodal(sigma, p, z_opt, z):
     w = np.zeros(z.shape[0])
     # Loop over peaks
     for i in range(len(p)):
-        w += p[i] * fit_gaus(sigma = sigma[i], z_opt = z_opt[i,:], z = z)
+        w += p[i] * fit_gaus(sigma = sigma[i], z_opt = z_opt[i], z = z)
     return w
 
 

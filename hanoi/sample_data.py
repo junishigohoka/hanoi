@@ -1,7 +1,38 @@
 from . import *
 import numpy as np
 
-def sample_data():
+
+def sample_data_1():
+    N = 100
+    n = 1
+    L = 1
+
+    M_m = np.array([[1]], 
+                   dtype = np.float64
+                   )
+
+    M_v = np.array([[1]], 
+                   dtype = np.float64
+                   )
+
+    M_c = np.array([[]],
+                   dtype = np.float64
+                   )
+
+    sample_mut_effect = hanoi.MutEffect(mean = M_m, var = M_v, cov = M_c)
+
+    sample_geno = np.zeros((L, N))
+    sample_geno[:, 0:25] = 1
+    sample_geno[:, 25:50] = 2
+
+    sample_z_ref = np.array([0], dtype = np.float64)
+    sample_c_ref = np.array([[0.1]], dtype = np.float64)
+
+    sample_data = SampleData(mut_effect = sample_mut_effect, geno = sample_geno, z_ref = sample_z_ref, c_ref = sample_c_ref)
+    return sample_data
+
+
+def sample_data_2():
     N = 9
     n = 2
     L = 5

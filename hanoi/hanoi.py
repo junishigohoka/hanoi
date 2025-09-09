@@ -65,7 +65,7 @@ class BreedVal:
         self.N = mean.shape[1]
         self.n = mean.shape[0]
         if self.n == 1:
-            self.varcov = np.empty((0, self.N))
+            self.varcov = self.var.reshape((self.N, 1, 1))
         else:
             self.varcov = np.array([cov_mtx(var = self.var[:,i], cov = self.cov[:,i]) for i in range(self.N)])
         for arr in (self.var, self.cov):

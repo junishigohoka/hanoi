@@ -112,7 +112,7 @@ def sim_mutation(genotype, mut_rate):
 
 def sim_pheno(breed_val: BreedVal, mean_0, varcov_0):
     if breed_val.n == 1:
-        z = np.random.normal(mean_0 + breed_val.mean, varcov_0 + breed_val.var)
+        z = np.random.normal(mean_0 + breed_val.mean, varcov_0 + breed_val.var).T
         return z
     ## Cholesky decomposition of the covariance matrices
     #chol = jnp.linalg.cholesky(varcov_0 + breed_val.varcov)
@@ -126,7 +126,7 @@ def sim_pheno(breed_val: BreedVal, mean_0, varcov_0):
 
 
 
-def sim_reproduction(popsize, genotype, fitness ):
+def sim_reproduction(popsize, genotype, fitness):
     # number of offspring per genotype of each genotype
     n_loci = genotype.shape[0]
     if fitness.sum() == 0:
