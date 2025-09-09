@@ -142,6 +142,12 @@ class Generations(Generation):
 
 
 
+class SampleData:
+    def __init__(self, mut_effect, geno, z_ref, c_ref):
+        self.mut_effect = mut_effect
+        self.geno = geno
+        self.z_ref = z_ref
+        self.c_ref = c_ref
 
 
 
