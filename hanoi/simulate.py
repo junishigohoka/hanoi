@@ -49,7 +49,8 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
     genotype_cur = genotype
     if n_gen == 0:
         i = 0
-        while not (np.all(np.isin(genotype_cur, [0,2])) or np.all(np.isnan(genotype_cur))):
+        while not (np.all(np.all(genotype_cur == 0, axis = 1) | np.all(genotype_cur == 2, axis = 1) )):
+        #while not (np.all(np.isin(genotype_cur, [0,2])) or np.all(np.isnan(genotype_cur))):
         #while np.any(genotype_cur == 1) or not np.isnan(genotype_cur[0,0]):
             generations_list.append(
                     sim_generation(mut_effect = mut_effect, 
