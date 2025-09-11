@@ -1,7 +1,7 @@
 # hanoi
 A Python package for population genetic simulation with Heritable Additive Noise.
 
-## Install
+## Installation
 
 ```bash
 pip install hanoi
