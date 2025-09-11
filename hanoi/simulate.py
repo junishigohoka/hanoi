@@ -122,7 +122,7 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
                                   n_gen = i + 1
                                   )
         return generations
-    else:
+    else: # i.e. record is False
         genotype_cur = genotype
         if n_gen == 0:
             i = 0
@@ -140,14 +140,14 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
             for i in range(n_gen):
                 if np.all(np.isnan(genotype_cur)):
                     break
-                    gen = sim_generation(mut_effect = mut_effect, 
-                                         genotype = genotype_cur, 
-                                         mut_rate = mut_rate, 
-                                         fit_func = fit_func, 
-                                         mean_0 = mean_0,
-                                         varcov_0 = varcov_0,
-                                         **kwargs)
-                    genotype_cur = gen.genotype_next
+                gen = sim_generation(mut_effect = mut_effect, 
+                                     genotype = genotype_cur, 
+                                     mut_rate = mut_rate, 
+                                     fit_func = fit_func, 
+                                     mean_0 = mean_0,
+                                     varcov_0 = varcov_0,
+                                     **kwargs)
+                genotype_cur = gen.genotype_next
         return [i, gen]
 
 
@@ -278,7 +278,6 @@ def run_replicates(n_reps, max_workers = os.cpu_count(), seeds = None, **kwargs)
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         # Schedule all tasks
-        #futures = [executor.submit(sim_generations, **kwargs) for _ in range(n_reps)]
         futures = {
             executor.submit(sim_generations, seed=seed, **kwargs): i
             for i, seed in enumerate(seeds)
