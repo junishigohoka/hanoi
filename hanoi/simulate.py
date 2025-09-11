@@ -1,7 +1,7 @@
 from .hanoi import *
 from .fitness import *
 import numpy as np
-import math
+import math, os
 #import jax.numpy as jnp
 from scipy.spatial.distance import squareform
 import concurrent.futures as futures
@@ -59,7 +59,7 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, *
                      )
 
 
-def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit_func, record = True, **kwargs):
+def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit_func, seed = None, record = True, **kwargs):
     """
     Simulates multiple generations.
 
@@ -73,12 +73,15 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
         varcov_0 :   2D np.ndarray of (n, n) representing baseline variance-covariance matrix for a genotype of 0000....
         fit_func :   str representing the fitness function. 
                      Should be one of "fit_neutral", "fit_gaus", "fit_multimodal", "fit_step".
+        seed :       int used as seed.
         record :     bool representing whether the intermediate generations are recorded.
     Returns:
         If record is True, a hanoi.Generations object is returned.
         If record is False, a list of 2 is returned:
         The first element is n_gen, and the second is hanoi.Generation object representing the last generation.
     """
+    if seed is not None:
+        np.random.seed(seed)
     if record:
         generations_list = []
         genotype_cur = genotype
@@ -124,13 +127,14 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
         if n_gen == 0:
             i = 0
             while not (np.all(np.all(genotype_cur == 0, axis = 1) | np.all(genotype_cur == 2, axis = 1) )):
-                genotype_cur = sim_generation(mut_effect = mut_effect, 
+                gen = sim_generation(mut_effect = mut_effect, 
                                genotype = genotype_cur, 
                                mut_rate = mut_rate, 
                                fit_func = fit_func, 
                                mean_0 = mean_0,
                                varcov_0 = varcov_0,
-                               **kwargs).genotype_next
+                               **kwargs)
+                genotype_cur = gen.genotype_next
                 i+=1
         else:
             for i in range(n_gen):
@@ -242,7 +246,7 @@ def sim_reproduction(popsize, genotype, fitness):
     return genotype_next, n_offspring
 
 
-def run_replicates(n_reps, max_workers = os.cpu_count(), **kwargs):
+def run_replicates(n_reps, max_workers = os.cpu_count(), seeds = None, **kwargs):
     """
     Run `hanoi.sim_generations` many times.
 
@@ -252,6 +256,7 @@ def run_replicates(n_reps, max_workers = os.cpu_count(), **kwargs):
                    Number of times to run `hanoi.sim_generations`
     max_workers :  int
                    Number of CPUs to use for parallelisation. <os.cpu_count()>
+    seeds :        int
     **kwargs :     dict
                    Extra arguments passed to `hanoi.sim_generations`.
 
@@ -264,12 +269,24 @@ def run_replicates(n_reps, max_workers = os.cpu_count(), **kwargs):
     """
     results = [None] * n_reps
 
+    # generate seeds if not provided
+    if seeds is None:
+        ss = np.random.SeedSequence()
+        seeds = [int(s.generate_state(1)[0]) for s in ss.spawn(n_reps)]
+    elif len(seeds) != n_reps:
+        raise ValueError("Length of seeds must equal n_reps")
+
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         # Schedule all tasks
-        futures = [executor.submit(hanoi.sim_generations, **kwargs) for _ in range(n_reps)]
+        #futures = [executor.submit(sim_generations, **kwargs) for _ in range(n_reps)]
+        futures = {
+            executor.submit(sim_generations, seed=seed, **kwargs): i
+            for i, seed in enumerate(seeds)
+        }
         
         # Collect results as they finish
-        for i, fut in enumerate(as_completed(futures)):
-            results[i] = fut.result()
+        for fut in as_completed(futures):
+            idx = futures[fut]          # get the original index of this future
+            results[idx] = fut.result() # store in the correct slot
     return results
 
