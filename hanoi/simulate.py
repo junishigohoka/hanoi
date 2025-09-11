@@ -180,9 +180,12 @@ def run_replicates(n_reps, max_workers = os.cpu_count(), **kwargs):
 
     Parameters
     ----------
-    n_reps :   int
-               number of times to run `hanoi.sim_generations`
-    **kwargs : Extra arguments passed to `hanoi.sim_generations`.
+    n_reps :       int
+                   Number of times to run `hanoi.sim_generations`
+    max_workers :  int
+                   Number of CPUs to use for parallelisation. <os.cpu_count()>
+    **kwargs :     dict
+                   Extra arguments passed to `hanoi.sim_generations`.
 
 
     Returns
