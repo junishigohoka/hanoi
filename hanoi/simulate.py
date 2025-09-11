@@ -4,7 +4,8 @@ import numpy as np
 import math
 #import jax.numpy as jnp
 from scipy.spatial.distance import squareform
-
+import concurrent.futures as futures
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 
 def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, **kwargs):
     popsize = genotype.shape[1]
@@ -44,15 +45,16 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, *
                      )
 
 
-def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit_func, **kwargs):
-    generations_list = []
-    genotype_cur = genotype
-    if n_gen == 0:
-        i = 0
-        while not (np.all(np.all(genotype_cur == 0, axis = 1) | np.all(genotype_cur == 2, axis = 1) )):
-        #while not (np.all(np.isin(genotype_cur, [0,2])) or np.all(np.isnan(genotype_cur))):
-        #while np.any(genotype_cur == 1) or not np.isnan(genotype_cur[0,0]):
-            generations_list.append(
+def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit_func, record = True, **kwargs):
+    if record:
+        generations_list = []
+        genotype_cur = genotype
+        if n_gen == 0:
+            i = 0
+            while not (np.all(np.all(genotype_cur == 0, axis = 1) | np.all(genotype_cur == 2, axis = 1) )):
+            #while not (np.all(np.isin(genotype_cur, [0,2])) or np.all(np.isnan(genotype_cur))):
+            #while np.any(genotype_cur == 1) or not np.isnan(genotype_cur[0,0]):
+                generations_list.append(
                     sim_generation(mut_effect = mut_effect, 
                                    genotype = genotype_cur, 
                                    mut_rate = mut_rate, 
@@ -60,31 +62,55 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
                                    mean_0 = mean_0,
                                    varcov_0 = varcov_0,
                                    **kwargs))
-            genotype_cur = generations_list[-1].genotype_next
-            i+=1
+                genotype_cur = generations_list[-1].genotype_next
+                i+=1
+        else:
+            for i in range(n_gen):
+                if np.all(np.isnan(genotype_cur)):
+                    break
+                generations_list.append(
+                    sim_generation(mut_effect = mut_effect, 
+                                   genotype = genotype_cur, 
+                                   mut_rate = mut_rate, 
+                                   fit_func = fit_func, 
+                                   mean_0 = mean_0,
+                                   varcov_0 = varcov_0,
+                                   **kwargs))
+                genotype_cur = generations_list[-1].genotype_next
+        generations = Generations(genotype = np.array([generation.genotype for generation in generations_list]), 
+                                  genotype_next = np.array([generation.genotype_next for generation in generations_list]), 
+                                  breed_val = np.array([generation.breed_val for generation in generations_list]),
+                                  phenotype = np.array([generation.phenotype for generation in generations_list]),
+                                  fitness = np.array([generation.fitness for generation in generations_list]),
+                                  n_offspring = np.array([generation.n_offspring for generation in generations_list]),
+                                  n_gen = i + 1
+                                  )
+        return generations
     else:
-        for i in range(n_gen):
-            if np.all(np.isnan(genotype_cur)):
-                break
-            generations_list.append(
-                    sim_generation(mut_effect = mut_effect, 
+        genotype_cur = genotype
+        if n_gen == 0:
+            i = 0
+            while not (np.all(np.all(genotype_cur == 0, axis = 1) | np.all(genotype_cur == 2, axis = 1) )):
+                genotype_cur = sim_generation(mut_effect = mut_effect, 
+                               genotype = genotype_cur, 
+                               mut_rate = mut_rate, 
+                               fit_func = fit_func, 
+                               mean_0 = mean_0,
+                               varcov_0 = varcov_0,
+                               **kwargs).genotype_next
+                i+=1
+        else:
+            for i in range(n_gen):
+                if np.all(np.isnan(genotype_cur)):
+                    break
+                    genotype_cur = sim_generation(mut_effect = mut_effect, 
                                    genotype = genotype_cur, 
                                    mut_rate = mut_rate, 
                                    fit_func = fit_func, 
                                    mean_0 = mean_0,
                                    varcov_0 = varcov_0,
-                                   **kwargs))
-            genotype_cur = generations_list[-1].genotype_next
-    generations = Generations(genotype = np.array([generation.genotype for generation in generations_list]), 
-                              genotype_next = np.array([generation.genotype_next for generation in generations_list]), 
-                              breed_val = np.array([generation.breed_val for generation in generations_list]),
-                              phenotype = np.array([generation.phenotype for generation in generations_list]),
-                              fitness = np.array([generation.fitness for generation in generations_list]),
-                              n_offspring = np.array([generation.n_offspring for generation in generations_list]),
-                              n_gen = i + 1
-                              )
-    return generations
-
+                                   **kwargs).genotype_next
+        return [i, genotype_cur]
 
 
 
@@ -148,4 +174,31 @@ def sim_reproduction(popsize, genotype, fitness):
     return genotype_next, n_offspring
 
 
+def run_replicates(n_reps, max_workers = os.cpu_count(), **kwargs):
+    """
+    Run `hanoi.sim_generations` many times.
+
+    Parameters
+    ----------
+    n_reps :   int
+               number of times to run `hanoi.sim_generations`
+    **kwargs : Extra arguments passed to `hanoi.sim_generations`.
+
+
+    Returns
+    -------
+    A list of n_reps. 
+    With `record = True` (default), it returns a list of n_reps objects of type `hanoi.Generation`.
+    With `record = False, it returns a list of n_reps list of 2 (i.e. shape (n_reps, 2)). The first element of each list of two is the number of generations, and the second element is a 2D np.ndarray representing the genotype table of the final generation.
+    """
+    results = [None] * n_reps
+
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # Schedule all tasks
+        futures = [executor.submit(hanoi.sim_generations, **kwargs) for _ in range(n_reps)]
+        
+        # Collect results as they finish
+        for i, fut in enumerate(as_completed(futures)):
+            results[i] = fut.result()
+    return results
 
