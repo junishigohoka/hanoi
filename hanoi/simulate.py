@@ -8,6 +8,20 @@ import concurrent.futures as futures
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 
 def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, **kwargs):
+    """
+    Simulates one generation.
+
+    Arguments:
+        mut_effect : hanoi.MutEffect object representing mutation effect.
+        genotype :   2D np.ndarray of (L, N) representing genotype.
+        mut_rate :   float representing mutation rate per locus per generation.
+        fit_func :   Fitness function.
+                     "fit_neutral", "fit_gaus", "fit_multimodal", "fit_step"
+        mean_0 :     2D np.ndarray of (n, N) representing expectation of n traits for a genotype of 0000...
+        varcov_0 :   2D np.ndarray of (n, n) representing baseline variance-covariance matrix for a genotype of 0000....
+        **kwargs :   Extra arguments passed to fitness function. For more details, see help of fit_neutral, fit_gaus, fit_multimodal, fit_step.
+    Returns: hanoi.Generation object representing simulated generation.
+    """
     popsize = genotype.shape[1]
     
     # Breeding value
@@ -46,6 +60,25 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, *
 
 
 def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit_func, record = True, **kwargs):
+    """
+    Simulates multiple generations.
+
+    Arguments:
+        n_gen :      Number of generations to simulate. 
+                     n_gen = 0 runs simulation until mutations at all loci are fixed in the population.
+        mut_effect : hanoi.MutEffect representing the mutation effect.
+        genotype :   2D np.ndarray of (L, N) representing the initial genotype table.
+        mut_rate :   A float representing mutation rate per locus per generation.
+        mean_0 :     2D np.ndarray of (n, N) representing expectation of n traits for a genotype of 0000...
+        varcov_0 :   2D np.ndarray of (n, n) representing baseline variance-covariance matrix for a genotype of 0000....
+        fit_func :   str representing the fitness function. 
+                     Should be one of "fit_neutral", "fit_gaus", "fit_multimodal", "fit_step".
+        record :     bool representing whether the intermediate generations are recorded.
+    Returns:
+        If record is True, a hanoi.Generations object is returned.
+        If record is False, a list of 2 is returned:
+        The first element is n_gen, and the second is hanoi.Generation object representing the last generation.
+    """
     if record:
         generations_list = []
         genotype_cur = genotype
@@ -103,18 +136,28 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
             for i in range(n_gen):
                 if np.all(np.isnan(genotype_cur)):
                     break
-                    genotype_cur = sim_generation(mut_effect = mut_effect, 
-                                   genotype = genotype_cur, 
-                                   mut_rate = mut_rate, 
-                                   fit_func = fit_func, 
-                                   mean_0 = mean_0,
-                                   varcov_0 = varcov_0,
-                                   **kwargs).genotype_next
-        return [i, genotype_cur]
+                    gen = sim_generation(mut_effect = mut_effect, 
+                                         genotype = genotype_cur, 
+                                         mut_rate = mut_rate, 
+                                         fit_func = fit_func, 
+                                         mean_0 = mean_0,
+                                         varcov_0 = varcov_0,
+                                         **kwargs)
+                    genotype_cur = gen.genotype_next
+        return [i, gen]
 
 
 
 def sim_mutation(genotype, mut_rate):
+    """
+    Simulates mutation.
+
+    Arguments :
+        genotype : 2D np.ndarray representing genotye table before mutation.
+        mut_rate : float representing mutation rate per locus per generation.
+
+    Returns: 2D np.ndarray representing genotype table after mutation.
+    """
     # Compute transition matrix
     transition_matrix = np.array([[(1 - mut_rate)**2, 2 * mut_rate * (1 - mut_rate), mut_rate**2],
                                   [mut_rate * (1 - mut_rate), (1 - mut_rate)**2 + mut_rate**2, mut_rate * (1 - mut_rate)],
@@ -138,6 +181,17 @@ def sim_mutation(genotype, mut_rate):
 
 
 def sim_pheno(breed_val: BreedVal, mean_0, varcov_0):
+    """
+    Simulates phenotype.
+
+    Arguments:
+        breed_val : hanoi.BreedVal object representing breeding value.
+        mean_0 :    2D np.ndarray of (n, N) representing expectation of n traits for a genotype of 0000...
+        varcov_0 :  2D np.ndarray of (n, n) representing baseline variance-covariance matrix for a genotype of 0000....
+
+    Returns: 2D np.ndarray of (N, n) representing phenotype.
+             [i, j] represents the phenotype of individual i for trait j.
+    """
     if breed_val.n == 1:
         z = np.random.normal(mean_0 + breed_val.mean, varcov_0 + breed_val.var).T
         return z
@@ -154,6 +208,20 @@ def sim_pheno(breed_val: BreedVal, mean_0, varcov_0):
 
 
 def sim_reproduction(popsize, genotype, fitness):
+    """
+    Simulates reproduction.
+
+    Arguments:
+        popsize :  int N representing population size
+        genotype : 2D np.ndarray of (L, N) representing genotype of parents.
+        fitness :  1D np.ndarray of N representing fitness of parents.
+
+    Returns: A tuple (genotype_next, n_offspring)
+        genotype_next : 2D np.ndarray of (L, N) representing genotype of the offspring
+        n_offspring :  Number of offspring.
+                        Should be a 1D np.ndarray of length N and the sum should be 2N.
+                        n_offspring[i] holds the number of offspring of parent individual i.
+    """
     # number of offspring per genotype of each genotype
     n_loci = genotype.shape[0]
     if fitness.sum() == 0:
