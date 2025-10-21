@@ -64,3 +64,20 @@ def fit_step(boxes, z):
     ).astype(float)
 
 
+
+def fit_sigmoid(a, b, z):
+    """
+    Computes fitness based on a generaised logistic function.
+
+    Arguments:
+        a: 1D array-like of n specifying the "centre" of the subspace where fitness is 1/2
+        b: 1D array-like of n specifying the direction and steepness of the slope from the centre.
+        z: (N, n) array representing n-dimensional phenotypes of N individuals.
+    Returns: (N,) array representing fitness of N individuals
+    """
+    N = z.shape[0]
+    n = z.shape[1]
+    a = np.repeat(np.asarray(a)[None, :], N, axis = 0)
+    b = np.repeat(np.asarray(b)[None, :], N, axis = 0)
+    #return (1/(1 + np.exp(-b * (z - a)))**(1/n)).prod(axis = 1)
+    return (1/(1 + np.exp((-b * (z - a)).sum(axis = 1))))
