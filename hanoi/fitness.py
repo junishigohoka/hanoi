@@ -70,8 +70,8 @@ def fit_sigmoid(a, b, z):
     Computes fitness based on a generaised logistic function.
 
     Arguments:
-        a: 1D array-like of n specifying the "centre" of the subspace where fitness is 1/2
-        b: 1D array-like of n specifying the direction and steepness of the slope from the centre.
+        a: 1D array-like of n specifying the "centre" of a linear subspace where fitness is 1/2
+        b: 1D array-like of n specifying the direction and steepness of the slope orthogonal to the linear subspace where fitness is 1/2.
         z: (N, n) array representing n-dimensional phenotypes of N individuals.
     Returns: (N,) array representing fitness of N individuals
     """
