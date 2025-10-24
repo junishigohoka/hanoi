@@ -202,7 +202,7 @@ def sim_pheno(breed_val: BreedVal, mean_0, varcov_0):
              [i, j] represents the phenotype of individual i for trait j.
     """
     if breed_val.n == 1:
-        z = np.random.normal(mean_0 + breed_val.mean, varcov_0 + breed_val.var).T
+        z = np.random.normal(mean_0 + breed_val.mean, np.sqrt(varcov_0 + breed_val.var)).T
         return z
     ## Cholesky decomposition of the covariance matrices
     #chol = jnp.linalg.cholesky(varcov_0 + breed_val.varcov)
