@@ -39,11 +39,9 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, *
         w = fit_neutral(z=z)
     if fit_func == "fit_step":
         boxes = kwargs.get('boxes')
-        w = fit_step(z=z, boxes=boxes)
+        w = fit_step(z=z, **kwargs)
     if fit_func == "fit_sigmoid":
-        a = kwargs.get('a')
-        b = kwargs.get('b')
-        w = fit_sigmoid(z=z, a=a, b=b)
+        w = fit_sigmoid(z=z, **kwargs)
     
     # Germline mutation
     if mut_rate > 0:
