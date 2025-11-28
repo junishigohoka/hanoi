@@ -63,16 +63,13 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, *
                      )
 
 
-def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit_func, n_gen_max = np.inf, seed = None, record = True, **kwargs):
+def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit_func, seed = None, record = True, **kwargs):
     """
     Simulates multiple generations.
 
     Arguments:
         n_gen :      Number of generations to simulate. 
                      n_gen = 0 runs simulation until mutations at all loci are fixed in the population.
-        n_gen_max:   Maximum number of generations to simulate.
-                     If n_gen > 0, n_gen_max is set to n_gen.
-                     If n_gen == 0, simulation will stop if mutations do not fix before n_gen_max.
         mut_effect : hanoi.MutEffect representing the mutation effect.
         genotype :   2D np.ndarray of (L, N) representing the initial genotype table.
         mut_rate :   A float representing mutation rate per locus per generation.
@@ -89,14 +86,14 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
     """
     if seed is not None:
         np.random.seed(seed)
-    if n_gen > 0:
-        n_gen_max = n_gen
     if record:
         generations_list = []
         genotype_cur = genotype
         if n_gen == 0:
             i = 0
-            while not (np.all(np.all(genotype_cur == 0, axis = 1) | np.all(genotype_cur == 2, axis = 1)) or np.all(np.isnan(genotype_cur)) or i == n_gen_max):
+            while not (np.all(np.all(genotype_cur == 0, axis = 1) | np.all(genotype_cur == 2, axis = 1)) or np.all(np.isnan(genotype_cur))):
+            #while not (np.all(np.isin(genotype_cur, [0,2])) or np.all(np.isnan(genotype_cur))):
+            #while np.any(genotype_cur == 1) or not np.isnan(genotype_cur[0,0]):
                 generations_list.append(
                     sim_generation(mut_effect = mut_effect, 
                                    genotype = genotype_cur, 
@@ -133,7 +130,7 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
         genotype_cur = genotype
         if n_gen == 0:
             i = 0
-            while not (np.all(np.all(genotype_cur == 0, axis = 1) | np.all(genotype_cur == 2, axis = 1))  or np.all(np.isnan(genotype_cur)) or i == n_gen_max) :
+            while not (np.all(np.all(genotype_cur == 0, axis = 1) | np.all(genotype_cur == 2, axis = 1))  or np.all(np.isnan(genotype_cur))) :
                 gen = sim_generation(mut_effect = mut_effect, 
                                genotype = genotype_cur, 
                                mut_rate = mut_rate, 
