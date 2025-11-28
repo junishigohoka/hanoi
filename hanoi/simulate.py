@@ -34,7 +34,7 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, *
     if fit_func == "fit_gaus":
         w = fit_gaus(z=z, **kwargs)
     if fit_func == "fit_multimodal":
-        w = fit_multimodal(sigma=sigma, p=kwargs.get('p'), z_opt=z_opt, z=z)
+        w = fit_multimodal(z=z, **kwargs)
     if fit_func == "fit_neutral":
         w = fit_neutral(z=z)
     if fit_func == "fit_step":
