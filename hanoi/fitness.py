@@ -47,6 +47,21 @@ def fit_multimodal(sigma, p, z_opt, z):
     return w
 
 
+
+def fit_linear(a, b, z):
+    """
+    Computes fitness based on a linear fitness function.
+
+    Arguments:
+        a: (n,) array representing slope of fitness along n traits
+        b: A scalar representing intercept of fitness
+        z:      (N, n) array representing n-dimensional phenotypes of N individuals.
+    Returns: (N,) array representing fitness of N individuals
+    """
+    w = z @ a + b
+    return w
+
+
 def fit_step(boxes, z):
     """
     Computes fitness based on a step fitness function.
