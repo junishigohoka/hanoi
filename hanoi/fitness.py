@@ -58,7 +58,12 @@ def fit_linear(a, b, z):
         z:      (N, n) array representing n-dimensional phenotypes of N individuals.
     Returns: (N,) array representing fitness of N individuals
     """
-    w = z @ a + b
+    w_ori = z @ a + b
+    # Shift fitness if negative fitness exists
+    if np.all(w_ori >= 0):
+        w = w_ori
+    else:
+        w = w_ori - w_ori.min()
     return w
 
 
