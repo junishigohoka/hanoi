@@ -7,7 +7,7 @@ from scipy.spatial.distance import squareform
 import concurrent.futures as futures
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 
-def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, **kwargs):
+def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, circular=False, period=None, **kwargs):
     """
     Simulates one generation.
 
@@ -16,20 +16,24 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, *
         genotype :   2D np.ndarray of (L, N) representing genotype.
         mut_rate :   float representing mutation rate per locus per generation.
         fit_func :   Fitness function.
-                     "fit_neutral", "fit_gaus", "fit_multimodal", "fit_step"
+                     "fit_neutral", "fit_gaus", "fit_multimodal", "fit_step", "fit_sigmoid",
+                     "fit_gaus_circular", "fit_step_circular"
         mean_0 :     2D np.ndarray of (n, N) representing expectation of n traits for a genotype of 0000...
         varcov_0 :   2D np.ndarray of (n, n) representing baseline variance-covariance matrix for a genotype of 0000....
-        **kwargs :   Extra arguments passed to fitness function. For more details, see help of fit_neutral, fit_gaus, fit_multimodal, fit_step.
+        circular :   bool. If True, phenotype is wrapped into [-period/2, period/2) to represent
+                     a circular (periodic) trait. See hanoi.sim_pheno.
+        period :    scalar or (n,) array. Required if circular=True. See hanoi.sim_pheno.
+        **kwargs :   Extra arguments passed to fitness function. For more details, see help of fit_neutral, fit_gaus, fit_multimodal, fit_step, fit_sigmoid, fit_gaus_circular, fit_step_circular.
     Returns: hanoi.Generation object representing simulated generation.
     """
     popsize = genotype.shape[1]
-    
+
     # Breeding value
     A = comp_breed_val(mut_effect=mut_effect, genotype=genotype)
-    
+
     # Phenotype
-    z = sim_pheno(breed_val=A, mean_0=mean_0, varcov_0 = varcov_0)
-    
+    z = sim_pheno(breed_val=A, mean_0=mean_0, varcov_0 = varcov_0, circular=circular, period=period)
+
     # Phenotype to fitness
     if fit_func == "fit_gaus":
         w = fit_gaus(z=z, **kwargs)
@@ -42,7 +46,11 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, *
         w = fit_step(z=z, **kwargs)
     if fit_func == "fit_sigmoid":
         w = fit_sigmoid(z=z, **kwargs)
-    
+    if fit_func == "fit_gaus_circular":
+        w = fit_gaus_circular(z=z, period=period, **kwargs)
+    if fit_func == "fit_step_circular":
+        w = fit_step_circular(z=z, period=period, **kwargs)
+
     # Germline mutation
     if mut_rate > 0:
         genotype_mut = sim_mutation(genotype=genotype, mut_rate=mut_rate) # This still returns nans if it is nans
@@ -76,10 +84,13 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
         mut_rate :   A float representing mutation rate per locus per generation.
         mean_0 :     2D np.ndarray of (n, N) representing expectation of n traits for a genotype of 0000...
         varcov_0 :   2D np.ndarray of (n, n) representing baseline variance-covariance matrix for a genotype of 0000....
-        fit_func :   str representing the fitness function. 
-                     Should be one of "fit_neutral", "fit_gaus", "fit_multimodal", "fit_step".
+        fit_func :   str representing the fitness function.
+                     Should be one of "fit_neutral", "fit_gaus", "fit_multimodal", "fit_step", "fit_sigmoid",
+                     "fit_gaus_circular", "fit_step_circular".
         seed :       int used as seed.
         record :     bool representing whether the intermediate generations are recorded.
+        **kwargs :   Extra arguments passed to hanoi.sim_generation, including circular/period and
+                     the fitness function's own arguments.
     Returns:
         If record is True, a hanoi.Generations object is returned.
         If record is False, a list of 2 is returned:
@@ -190,7 +201,7 @@ def sim_mutation(genotype, mut_rate):
 
 
 
-def sim_pheno(breed_val: BreedVal, mean_0, varcov_0):
+def sim_pheno(breed_val: BreedVal, mean_0, varcov_0, circular=False, period=None):
     """
     Simulates phenotype.
 
@@ -198,23 +209,26 @@ def sim_pheno(breed_val: BreedVal, mean_0, varcov_0):
         breed_val : hanoi.BreedVal object representing breeding value.
         mean_0 :    2D np.ndarray of (n, N) representing expectation of n traits for a genotype of 0000...
         varcov_0 :  2D np.ndarray of (n, n) representing baseline variance-covariance matrix for a genotype of 0000....
+        circular :  bool. If True, phenotype is wrapped into [-period/2, period/2) after sampling,
+                    to represent a circular (periodic) trait (e.g. time of day, angle).
+        period :    scalar or (n,) array. Required if circular=True.
+                    Specifies the full cycle length of the phenotype
+                    (e.g. 24 for time-of-day in hours, 2*pi for radians).
+                    Ignored if circular=False.
 
     Returns: 2D np.ndarray of (N, n) representing phenotype.
              [i, j] represents the phenotype of individual i for trait j.
+             If circular=True, values are wrapped into [-period/2, period/2);
+             e.g. with period=24, a raw value of 25 (1am the next day) is
+             wrapped to 1.
     """
     if breed_val.n == 1:
         z = np.random.normal(mean_0 + breed_val.mean, np.sqrt(varcov_0 + breed_val.var)).T
-        return z
-    ## Cholesky decomposition of the covariance matrices
-    #chol = jnp.linalg.cholesky(varcov_0 + breed_val.varcov)
-    ### Standard normal sampling
-    #z_std = np.random.standard_normal((breed_val.N, breed_val.n))
-    ## Convert N vectors of n standard normal variables to the N phenotype values in n dimensions
-    #z = np.einsum('ijk,ik->ij', chol, z_std) + mean_0
-    z = np.array([np.random.multivariate_normal(mean_0 + breed_val.mean[:,i], varcov_0 + breed_val.varcov[i]) for i in range(breed_val.N)])
+    else:
+        z = np.array([np.random.multivariate_normal(mean_0 + breed_val.mean[:,i], varcov_0 + breed_val.varcov[i]) for i in range(breed_val.N)])
+    if circular:
+        z = wrap_pheno(z, period)
     return z
-
-
 
 
 def sim_reproduction(popsize, genotype, fitness):
