@@ -215,8 +215,6 @@ class Generations(Generation):
         return self.generation(-1).allele_freqs_next()[0]
     def allele_freq_first(self):
         return self.generation(0).allele_freqs()[0]
-    def allele_freqs_all(self):
-        return np.vstack([self.allele_freqs(), self.allele_freq_last()])
 
     def show(self):
         print(f"Number of traits:\n {self.phenotype.shape[1]}")
