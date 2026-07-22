@@ -8,4 +8,4 @@ from scipy.spatial.distance import squareform
 import concurrent.futures as futures
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
