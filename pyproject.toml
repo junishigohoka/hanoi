@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hanoi"                 # this is what pip install hanoi will use
-version = "0.1.4"
+version = "0.1.3"
 description = "Heritable Additive NOIse"
 readme = "README.md"
 authors = [{ name = "Jun Ishigohoka", email = "jun.ishigohoka@tuebingen.mpg.de" }]
