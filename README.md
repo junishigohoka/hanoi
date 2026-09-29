@@ -1,3 +1,6 @@
+![logo/hanoi_2D.svg]
+
+
 # hanoi
 A Python package for population genetic simulation with Heritable Additive Noise.
 
