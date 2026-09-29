@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 110.55435 99.433174"
+   width="110.55435"
+   height="99.433174"
+   version="1.1"
+   id="svg13"
+   sodipodi:docname="hanoi_2D.svg"
+   inkscape:version="1.4.4 (1:1.4.4+202605061436+dcaf3e7d9e)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs13">
+    <clipPath
+       id="trose">
+      <ellipse
+         cx="120"
+         cy="172"
+         rx="108"
+         ry="32.400002"
+         id="ellipse1" />
+    </clipPath>
+    <clipPath
+       id="clipPath2">
+      <ellipse
+         cx="120"
+         cy="172"
+         rx="108"
+         ry="32.400002"
+         id="ellipse2" />
+    </clipPath>
+  </defs>
+  <sodipodi:namedview
+     id="namedview13"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="3.9148936"
+     inkscape:cx="19.029891"
+     inkscape:cy="28.991848"
+     inkscape:window-width="1916"
+     inkscape:window-height="1019"
+     inkscape:window-x="1920"
+     inkscape:window-y="59"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg13" />
+  <g
+     id="g32-2"
+     transform="matrix(0.96367014,0,0,0.96367014,-40.916377,-28.496028)"
+     style="stroke-width:1.0377">
+    <rect
+       x="44.542824"
+       y="95.519997"
+       width="110.55435"
+       height="7.4400001"
+       rx="3.8602419"
+       ry="3.8602421"
+       fill="#22364a"
+       id="rect1-5"
+       style="stroke-width:0.643374" />
+    <rect
+       x="97.649994"
+       y="33.519997"
+       width="3.0999999"
+       height="62"
+       rx="1.6084342"
+       ry="1.6084342"
+       fill="#b7c4d1"
+       id="rect3-4"
+       style="stroke-width:0.643374" />
+    <g
+       id="g13-7"
+       transform="translate(26,-40)"
+       style="stroke-width:1.0377">
+      <rect
+         x="41.849998"
+         y="73.519997"
+         width="3.0999999"
+         height="62"
+         rx="1.6084342"
+         ry="1.6084342"
+         fill="#b7c4d1"
+         id="rect2-4"
+         style="stroke-width:0.643374" />
+      <rect
+         x="32.860001"
+         y="124.36"
+         width="21.08"
+         height="7.4400001"
+         rx="3.8602421"
+         ry="3.8602421"
+         fill="#ffd43b"
+         opacity="1"
+         id="rect5-4"
+         style="stroke-width:0.643374" />
+      <rect
+         x="34.41"
+         y="115.06"
+         width="17.98"
+         height="7.4400001"
+         rx="3.8602421"
+         ry="3.8602421"
+         fill="#ffe873"
+         opacity="1"
+         id="rect6-30"
+         style="stroke-width:0.643374" />
+      <rect
+         x="35.959999"
+         y="105.76"
+         width="14.88"
+         height="7.4400001"
+         rx="3.8602421"
+         ry="3.8602421"
+         fill="#ffd43b"
+         opacity="1"
+         id="rect7-7"
+         style="stroke-width:0.643374" />
+      <rect
+         x="37.509998"
+         y="96.459999"
+         width="11.78"
+         height="7.4400001"
+         rx="3.8602421"
+         ry="3.8602421"
+         fill="#ffe873"
+         opacity="1"
+         id="rect8-8"
+         style="stroke-width:0.643374" />
+      <rect
+         x="39.060001"
+         y="87.160004"
+         width="8.6800003"
+         height="7.4400001"
+         rx="3.8602421"
+         ry="3.8602421"
+         fill="#ffd43b"
+         opacity="1"
+         id="rect9-68"
+         style="stroke-width:0.643374" />
+      <rect
+         x="40.610001"
+         y="77.860001"
+         width="5.5799999"
+         height="7.4400001"
+         rx="3.8602421"
+         ry="3.8602421"
+         fill="#ffe873"
+         opacity="1"
+         id="rect10-8"
+         style="stroke-width:0.643374" />
+    </g>
+    <g
+       id="g14-4"
+       transform="translate(-26,-40)"
+       style="stroke-width:1.0377">
+      <rect
+         x="153.45"
+         y="73.519997"
+         width="3.0999999"
+         height="62"
+         rx="1.6084342"
+         ry="1.6084342"
+         fill="#b7c4d1"
+         id="rect4-3"
+         style="stroke-width:0.643374" />
+      <rect
+         x="135.16"
+         y="124.36"
+         width="39.68"
+         height="7.4400001"
+         rx="3.8602421"
+         ry="3.8602421"
+         fill="#306998"
+         opacity="1"
+         id="rect11-1"
+         style="stroke-width:0.643374" />
+      <rect
+         x="140.12"
+         y="115.06"
+         width="29.76"
+         height="7.4400001"
+         rx="3.8602421"
+         ry="3.8602421"
+         fill="#4b8bbe"
+         opacity="1"
+         id="rect12-4"
+         style="stroke-width:0.643374" />
+      <rect
+         x="145.08"
+         y="105.76"
+         width="19.84"
+         height="7.4400001"
+         rx="3.8602421"
+         ry="3.8602421"
+         fill="#306998"
+         opacity="1"
+         id="rect13-9"
+         style="stroke-width:0.643374" />
+    </g>
+    <text
+       x="99.743622"
+       y="128.68016"
+       text-anchor="middle"
+       font-family="Comfortaa"
+       font-weight="700"
+       font-size="30.5578px"
+       letter-spacing="2"
+       fill="#22364a"
+       id="text28-20"
+       style="fill:#22364a;fill-opacity:1;stroke-width:1.0377">hanoi</text>
+  </g>
+</svg>
