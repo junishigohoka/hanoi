@@ -1,4 +1,4 @@
-![logo/hanoi_2D.png]
+![](logo/hanoi_2D.png)
 
 
 # hanoi
