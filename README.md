@@ -1,4 +1,4 @@
-![logo/hanoi_2D.svg]
+![logo/hanoi_2D.png]
 
 
 # hanoi
