@@ -19,7 +19,7 @@ def sample_data_1():
                    dtype = np.float64
                    )
 
-    sample_mut_effect = hanoi.MutEffect(mean = M_m, var = M_v, cov = M_c)
+    sample_mut_effect = hanoi.MutEffect(mean = M_m, ln_var = M_v, artanh_cor = M_c)
 
     sample_geno = np.zeros((L, N))
     sample_geno[:, 0:25] = 1
@@ -51,7 +51,7 @@ def sample_data_2():
                    dtype = np.float64
                    )
 
-    sample_mut_effect = hanoi.MutEffect(mean = M_m, var = M_v, cov = M_c)
+    sample_mut_effect = hanoi.MutEffect(mean = M_m, ln_var = M_v, artanh_cor = M_c)
 
     sample_geno = np.zeros((L, N))
     for i in range(L):

@@ -7,7 +7,7 @@ from scipy.spatial.distance import squareform
 import concurrent.futures as futures
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 
-def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, **kwargs):
+def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, v_0, r_0=None, **kwargs):
     """
     Simulates one generation.
 
@@ -18,7 +18,9 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, *
         fit_func :   Fitness function.
                      "fit_neutral", "fit_gaus", "fit_multimodal", "fit_step"
         mean_0 :     2D np.ndarray of (n, N) representing expectation of n traits for a genotype of 0000...
-        varcov_0 :   2D np.ndarray of (n, n) representing baseline variance-covariance matrix for a genotype of 0000....
+        v_0 :        1D np.ndarray of n representing baseline phenotypic variance (noise) of n traits for a genotype of 0000...
+        r_0 :        1D np.ndarray of choose(n, 2) representing baseline correlation of noise between trait pairs for a genotype of 0000...
+                     Not needed if n = 1.
         **kwargs :   Extra arguments passed to fitness function. For more details, see help of fit_neutral, fit_gaus, fit_multimodal, fit_step.
     Returns: hanoi.Generation object representing simulated generation.
     """
@@ -28,7 +30,7 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, *
     A = comp_breed_val(mut_effect=mut_effect, genotype=genotype)
     
     # Phenotype
-    z = sim_pheno(breed_val=A, mean_0=mean_0, varcov_0 = varcov_0)
+    z = sim_pheno(breed_val=A, mean_0=mean_0, v_0 = v_0, r_0 = r_0)
     
     # Phenotype to fitness
     if fit_func == "fit_gaus":
@@ -61,7 +63,7 @@ def sim_generation(mut_effect, genotype, mut_rate, fit_func, mean_0, varcov_0, *
                      )
 
 
-def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit_func, seed = None, record = True, **kwargs):
+def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, v_0, fit_func, r_0 = None, seed = None, record = True, **kwargs):
     """
     Simulates multiple generations.
 
@@ -72,7 +74,9 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
         genotype :   2D np.ndarray of (L, N) representing the initial genotype table.
         mut_rate :   A float representing mutation rate per locus per generation.
         mean_0 :     2D np.ndarray of (n, N) representing expectation of n traits for a genotype of 0000...
-        varcov_0 :   2D np.ndarray of (n, n) representing baseline variance-covariance matrix for a genotype of 0000....
+        v_0 :        1D np.ndarray of n representing baseline phenotypic variance (noise) of n traits for a genotype of 0000...
+        r_0 :        1D np.ndarray of choose(n, 2) representing baseline correlation of noise between trait pairs for a genotype of 0000...
+                     Not needed if n = 1.
         fit_func :   str representing the fitness function. 
                      Should be one of "fit_neutral", "fit_gaus", "fit_multimodal", "fit_step".
         seed :       int used as seed.
@@ -98,7 +102,8 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
                                    mut_rate = mut_rate, 
                                    fit_func = fit_func, 
                                    mean_0 = mean_0,
-                                   varcov_0 = varcov_0,
+                                   v_0 = v_0,
+                                   r_0 = r_0,
                                    **kwargs))
                 genotype_cur = generations_list[-1].genotype_next
                 i+=1
@@ -112,7 +117,8 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
                                    mut_rate = mut_rate, 
                                    fit_func = fit_func, 
                                    mean_0 = mean_0,
-                                   varcov_0 = varcov_0,
+                                   v_0 = v_0,
+                                   r_0 = r_0,
                                    **kwargs))
                 genotype_cur = generations_list[-1].genotype_next
         generations = Generations(genotype = np.array([generation.genotype for generation in generations_list]), 
@@ -134,7 +140,8 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
                                mut_rate = mut_rate, 
                                fit_func = fit_func, 
                                mean_0 = mean_0,
-                               varcov_0 = varcov_0,
+                               v_0 = v_0,
+                               r_0 = r_0,
                                **kwargs)
                 genotype_cur = gen.genotype_next
                 i+=1
@@ -147,7 +154,8 @@ def sim_generations(n_gen, mut_effect, genotype, mut_rate, mean_0, varcov_0, fit
                                      mut_rate = mut_rate, 
                                      fit_func = fit_func, 
                                      mean_0 = mean_0,
-                                     varcov_0 = varcov_0,
+                                     v_0 = v_0,
+                                     r_0 = r_0,
                                      **kwargs)
                 genotype_cur = gen.genotype_next
             i+=1 # I know this is ugly...
@@ -187,28 +195,29 @@ def sim_mutation(genotype, mut_rate):
 
 
 
-def sim_pheno(breed_val: BreedVal, mean_0, varcov_0):
+def sim_pheno(breed_val: BreedVal, mean_0, v_0, r_0=None):
     """
     Simulates phenotype.
+
+    Phenotypic noise follows a log-additive model:
+    the variance of trait i of an individual is v_0[i] * exp(breed_val.ln_var[i]), and
+    the correlation of noise of trait pair k is tanh(artanh(r_0[k]) + breed_val.artanh_cor[k]).
 
     Arguments:
         breed_val : hanoi.BreedVal object representing breeding value.
         mean_0 :    2D np.ndarray of (n, N) representing expectation of n traits for a genotype of 0000...
-        varcov_0 :  2D np.ndarray of (n, n) representing baseline variance-covariance matrix for a genotype of 0000....
+        v_0 :       1D np.ndarray of n representing baseline variance (noise) of n traits for a genotype of 0000...
+        r_0 :       1D np.ndarray of choose(n, 2) representing baseline correlation of noise between trait pairs
+                    for a genotype of 0000... Not needed if n = 1.
 
     Returns: 2D np.ndarray of (N, n) representing phenotype.
              [i, j] represents the phenotype of individual i for trait j.
     """
+    varcov = comp_varcov(breed_val=breed_val, v_0=v_0, r_0=r_0) # (N, n, n)
     if breed_val.n == 1:
-        z = np.random.normal(mean_0 + breed_val.mean, np.sqrt(varcov_0 + breed_val.var)).T
+        z = np.random.normal(mean_0 + breed_val.mean, np.sqrt(varcov[:, 0, 0])).T
         return z
-    ## Cholesky decomposition of the covariance matrices
-    #chol = jnp.linalg.cholesky(varcov_0 + breed_val.varcov)
-    ### Standard normal sampling
-    #z_std = np.random.standard_normal((breed_val.N, breed_val.n))
-    ## Convert N vectors of n standard normal variables to the N phenotype values in n dimensions
-    #z = np.einsum('ijk,ik->ij', chol, z_std) + mean_0
-    z = np.array([np.random.multivariate_normal(mean_0 + breed_val.mean[:,i], varcov_0 + breed_val.varcov[i]) for i in range(breed_val.N)])
+    z = np.array([np.random.multivariate_normal(mean_0 + breed_val.mean[:,i], varcov[i]) for i in range(breed_val.N)])
     return z
 
 

@@ -5,19 +5,25 @@ from scipy.spatial.distance import squareform
 
 class MutEffect:
     """
-    A class to represent mutational effects on mean, variance, and covariance of traits.
+    A class to represent mutational effects on mean, variance, and correlation of noise of traits.
+
+    The effects on phenotypic noise are on transformed scales
+    (log-additive model; see hanoi.comp_varcov):
+    an allele multiplies the variance by exp(effect) and
+    shifts the Fisher z-transformed correlation (artanh(r)) by the effect.
 
     Attributes
     ----------
     mean : Mean effects. 
         Should be a 2D np.array of shape (n, L). 
         mean[i, j] holds the effect of allele 1 at locus j on trait i.
-    var : Variance effects.
+    ln_var : Effects on log variance (log fold-change of variance).
         Should be a 2D np.array of shape (n, L).
-        var[i, j] holds the effect of allele 1 at locus j on trait i.
-    cov : Covariance effects.
+        ln_var[i, j] holds the effect of allele 1 at locus j on ln(variance) of trait i.
+    artanh_cor : Effects on Fisher z-transformed correlation of noise, i.e. artanh(correlation).
         Should be a 2D np.array of shape (choose(n, 2), L).
-        cov[i, j] holds the effect of allele 1 at locus j on the i-th trait pair.
+        artanh_cor[i, j] holds the effect of allele 1 at locus j on artanh(correlation) of the i-th trait pair.
+        The order of the trait pairs is that of scipy.spatial.distance.squareform: (1,2), (1,3), ..., (2,3), ...
     n : Number of traits
     L : Number of loci
 
@@ -27,51 +33,53 @@ class MutEffect:
     show() : Prints information of the MutEffect object.
 
     """
-    def __init__(self, mean: np.ndarray, var: np.ndarray, cov: np.ndarray):
+    def __init__(self, mean: np.ndarray, ln_var: np.ndarray, artanh_cor: np.ndarray):
         self.mean = mean
-        self.var = var
+        self.ln_var = ln_var
         self.n = self.mean.shape[0]
         self.L = self.mean.shape[1]
         if self.n == 1:
-            self.cov = np.zeros((0, self.L))
+            self.artanh_cor = np.zeros((0, self.L))
         else:
-            self.cov = cov
-        for arr in [self.mean, self.var, self.cov]:
+            self.artanh_cor = artanh_cor
+        for arr in [self.mean, self.ln_var, self.artanh_cor]:
             if arr.ndim != 2:
-                raise ValueError("mean, var, and cov should be 2D")
-        if self.n != self.var.shape[0]:
-            raise ValueError("mean and var should have the same number of rows (n)")
-        if self.L != self.var.shape[1]:
-            raise ValueError("mean and var should have the same number of columns (L)")
-        if self.cov.shape[0] != math.comb(self.n, 2):
-            print(self.cov.shape[0])
+                raise ValueError("mean, ln_var, and artanh_cor should be 2D")
+        if self.n != self.ln_var.shape[0]:
+            raise ValueError("mean and ln_var should have the same number of rows (n)")
+        if self.L != self.ln_var.shape[1]:
+            raise ValueError("mean and ln_var should have the same number of columns (L)")
+        if self.artanh_cor.shape[0] != math.comb(self.n, 2):
+            print(self.artanh_cor.shape[0])
             print(math.comb(self.n, 2))
-            raise ValueError("The number of rows of cov should be n choose 2")
+            raise ValueError("The number of rows of artanh_cor should be n choose 2")
     def show(self):
         print(f"Number of traits n:\n{self.n}")
-        print(f"Number of trait pairs:\n{self.cov.shape[0]}")
+        print(f"Number of trait pairs:\n{self.artanh_cor.shape[0]}")
         print(f"Number of loci L:\n{self.L}")
         print(f"Mutation effect of mean:\n{self.mean}")
-        print(f"Mutation effect of variance:\n{self.var}")
-        print(f"Mutation effect of covariance:\n{self.cov}")
-
+        print(f"Mutation effect of ln(variance):\n{self.ln_var}")
+        print(f"Mutation effect of artanh(correlation):\n{self.artanh_cor}")
 
 
 class BreedVal:
     """
     A class to represent breeding value of all individuals in a population
 
+    Breeding values are additive over loci. The breeding values of noise are on
+    transformed scales (log-additive model; see hanoi.comp_varcov).
+
     Attributes
     ----------
     mean : Breeding value of mean $A_m$.
            Should be a 2D np.ndarray of shape (n, N).
            mean[i, j] holds the breeding value of mean of trait i for individual j.
-    var : Breeding value of variance $A_v$
+    ln_var : Breeding value of ln(variance) $A_{lnv}$.
            Should be a 2D np.ndarray of shape (n, N).
-           var[i, j] holds the breeding value of variance of trait i for individual j.
-    cov : Breeding value of covariance $A_c$.
+           ln_var[i, j] holds the breeding value of ln(variance) of trait i for individual j.
+    artanh_cor : Breeding value of artanh(correlation) $A_c$.
            Should be a 2D np.ndarray of shape (choose(n, 2), N).
-           cov[i, j] holds the breeding value of covariance of the trait pair i for individual j.
+           artanh_cor[i, j] holds the breeding value of artanh(correlation) of the trait pair i for individual j.
     n : Number of traits
     N : Number of individuals
 
@@ -81,34 +89,29 @@ class BreedVal:
     show() : Prints information of the BreedVal object.
 
     """
-    def __init__(self, mean: np.ndarray, var: np.ndarray, cov: np.ndarray):
+    def __init__(self, mean: np.ndarray, ln_var: np.ndarray, artanh_cor: np.ndarray):
         self.mean = mean
-        self.var = var 
-        self.cov = cov 
+        self.ln_var = ln_var
+        self.artanh_cor = artanh_cor
         self.N = mean.shape[1]
         self.n = mean.shape[0]
-        if self.n == 1:
-            self.varcov = self.var.reshape((self.N, 1, 1))
-        else:
-            self.varcov = np.array([cov_mtx(var = self.var[:,i], cov = self.cov[:,i]) for i in range(self.N)])
-        for arr in (self.var, self.cov):
+        for arr in (self.ln_var, self.artanh_cor):
             if arr.ndim != 2:
-                raise ValueError("mean, var, and cov must be 2D arrays.")
-        Ns = [self.var.shape[1], self.cov.shape[1]]
+                raise ValueError("mean, ln_var, and artanh_cor must be 2D arrays.")
+        Ns = [self.ln_var.shape[1], self.artanh_cor.shape[1]]
         if not all(N == self.N for N in Ns):
-            raise ValueError("mean, var, and cov must have the same number of columns (N)")
-        if self.n != var.shape[0]:
-            raise ValueError("mean and var must have the same number of rows (n)")
-        if math.comb(self.n, 2) != self.cov.shape[0]:
-            raise ValueError("The number of rows of cov should match the number of rows of mean choose 2")
+            raise ValueError("mean, ln_var, and artanh_cor must have the same number of columns (N)")
+        if self.n != ln_var.shape[0]:
+            raise ValueError("mean and ln_var must have the same number of rows (n)")
+        if math.comb(self.n, 2) != self.artanh_cor.shape[0]:
+            raise ValueError("The number of rows of artanh_cor should match the number of rows of mean choose 2")
     def show(self):
         print(f"Number of traits:\n {self.n}")
         print(f"Number of trait pairs:\n {math.comb(self.n, 2)}")
         print(f"Number of individuals:\n {self.N}")
         print(f"Breeding value of mean:\n {self.mean}")
-        print(f"Breeding value of variance:\n {self.var}")
-        print(f"Breeding value of covariance:\n {self.cov}")
-        print(f"Breeding value of variance-covariance:\n {self.varcov}")
+        print(f"Breeding value of ln(variance):\n {self.ln_var}")
+        print(f"Breeding value of artanh(correlation):\n {self.artanh_cor}")
 
 
 class Generation:
@@ -254,9 +257,57 @@ def comp_breed_val(mut_effect: MutEffect, genotype: np.ndarray):
     Returns: hanoi.BreedVal object representing breeding value
     """
     A_m = 1/2 * mut_effect.mean @ genotype
-    A_v = 1/2 * mut_effect.var @ genotype
-    A_c = 1/2 * mut_effect.cov @ genotype
-    return BreedVal(mean = A_m, var = A_v, cov = A_c)
+    A_lnv = 1/2 * mut_effect.ln_var @ genotype
+    A_c = 1/2 * mut_effect.artanh_cor @ genotype
+    return BreedVal(mean = A_m, ln_var = A_lnv, artanh_cor = A_c)
+
+
+def comp_varcov(breed_val: BreedVal, v_0, r_0=None):
+    """
+    Computes the variance-covariance matrix of phenotypic noise of each individual
+    from breeding values, using the log-additive model.
+
+    For trait i, variance v_i = v_0[i] * exp(ln_var[i]).
+    For trait pair k, correlation r_k = tanh(artanh(r_0[k]) + artanh_cor[k]).
+    The covariance of traits i and j is r_k * sqrt(v_i * v_j).
+
+    Arguments:
+        breed_val : hanoi.BreedVal object representing breeding value.
+        v_0 :       1D array-like of n representing baseline variance of n traits for a genotype of 0000...
+                    Should be positive.
+        r_0 :       1D array-like of choose(n, 2) representing baseline correlation of trait pairs
+                    for a genotype of 0000... Should be in (-1, 1). Not needed if n = 1.
+
+    Returns: 3D np.ndarray of (N, n, n) representing variance-covariance matrices.
+    """
+    n, N = breed_val.n, breed_val.N
+    v_0 = np.atleast_1d(np.asarray(v_0, dtype = np.float64))
+    if v_0.shape != (n,):
+        raise ValueError("v_0 should be a 1D array of n (number of traits)")
+    if np.any(v_0 <= 0):
+        raise ValueError("v_0 should be positive")
+    v = v_0[:, None] * np.exp(breed_val.ln_var) # (n, N)
+    varcov = np.zeros((N, n, n))
+    idx = np.arange(n)
+    varcov[:, idx, idx] = v.T
+    if n == 1:
+        return varcov
+    if r_0 is None:
+        raise ValueError("r_0 is required if n > 1")
+    r_0 = np.atleast_1d(np.asarray(r_0, dtype = np.float64))
+    if r_0.shape != (math.comb(n, 2),):
+        raise ValueError("r_0 should be a 1D array of choose(n, 2) (number of trait pairs)")
+    if np.any(np.abs(r_0) >= 1):
+        raise ValueError("r_0 should be strictly between -1 and 1")
+    r = np.tanh(np.arctanh(r_0)[:, None] + breed_val.artanh_cor) # (choose(n, 2), N)
+    i, j = np.triu_indices(n, k = 1) # same order as scipy.spatial.distance.squareform
+    cov = r.T * np.sqrt(v[i, :] * v[j, :]).T # (N, choose(n, 2))
+    varcov[:, i, j] = cov
+    varcov[:, j, i] = cov
+    if n > 2 and np.any(np.linalg.eigvalsh(varcov) <= 0):
+        raise ValueError("Some variance-covariance matrices are not positive definite. "
+                         "Pairwise correlations can be valid while the whole matrix is not when n > 2.")
+    return varcov
 
 
 def cov_mtx(var, cov):
