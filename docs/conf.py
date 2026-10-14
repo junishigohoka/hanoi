@@ -32,3 +32,5 @@ myst_enable_extensions = ["dollarmath"]  # lets Markdown use $...$ math
 
 html_theme = "sphinx_rtd_theme"
 exclude_patterns = ["_build"]
+html_static_path = ["_static"]
+html_favicon = "_static/favicon.png"
