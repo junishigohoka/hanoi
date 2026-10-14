@@ -5,6 +5,8 @@ __pycache__/
 
 # Build and distribution
 build/
+docs/_build/
+docs/generated/
 dist/
 *.egg-info/
 
