@@ -8,30 +8,32 @@ class MutEffect:
     A class to represent mutational effects on mean, variance, and correlation of noise of traits.
 
     The effects on phenotypic noise are on transformed scales
-    (log-additive model; see hanoi.comp_varcov):
+    (log-additive model; see `hanoi.comp_varcov`):
     an allele multiplies the variance by exp(effect) and
     shifts the Fisher z-transformed correlation (artanh(r)) by the effect.
 
     Attributes
     ----------
-    mean : Mean effects. 
-        Should be a 2D np.array of shape (n, L). 
+    mean : np.ndarray
+        Mean effects, a 2D array of shape (n, L).
         mean[i, j] holds the effect of allele 1 at locus j on trait i.
-    ln_var : Effects on log variance (log fold-change of variance).
-        Should be a 2D np.array of shape (n, L).
+    ln_var : np.ndarray
+        Effects on log variance (log fold-change of variance), a 2D array of shape (n, L).
         ln_var[i, j] holds the effect of allele 1 at locus j on ln(variance) of trait i.
-    artanh_cor : Effects on Fisher z-transformed correlation of noise, i.e. artanh(correlation).
-        Should be a 2D np.array of shape (choose(n, 2), L).
+    artanh_cor : np.ndarray
+        Effects on Fisher z-transformed correlation of noise, i.e. artanh(correlation),
+        a 2D array of shape (choose(n, 2), L).
         artanh_cor[i, j] holds the effect of allele 1 at locus j on artanh(correlation) of the i-th trait pair.
-        The order of the trait pairs is that of scipy.spatial.distance.squareform: (1,2), (1,3), ..., (2,3), ...
-    n : Number of traits
-    L : Number of loci
-
+        The order of the trait pairs is that of `scipy.spatial.distance.squareform`: (1,2), (1,3), ..., (2,3), ...
+    n : int
+        Number of traits.
+    L : int
+        Number of loci.
 
     Methods
     -------
-    show() : Prints information of the MutEffect object.
-
+    show()
+        Prints information of the MutEffect object.
     """
     def __init__(self, mean: np.ndarray, ln_var: np.ndarray, artanh_cor: np.ndarray):
         self.mean = mean
@@ -64,30 +66,31 @@ class MutEffect:
 
 class BreedVal:
     """
-    A class to represent breeding value of all individuals in a population
+    A class to represent breeding value of all individuals in a population.
 
     Breeding values are additive over loci. The breeding values of noise are on
-    transformed scales (log-additive model; see hanoi.comp_varcov).
+    transformed scales (log-additive model; see `hanoi.comp_varcov`).
 
     Attributes
     ----------
-    mean : Breeding value of mean $A_m$.
-           Should be a 2D np.ndarray of shape (n, N).
-           mean[i, j] holds the breeding value of mean of trait i for individual j.
-    ln_var : Breeding value of ln(variance) $A_{lnv}$.
-           Should be a 2D np.ndarray of shape (n, N).
-           ln_var[i, j] holds the breeding value of ln(variance) of trait i for individual j.
-    artanh_cor : Breeding value of artanh(correlation) $A_c$.
-           Should be a 2D np.ndarray of shape (choose(n, 2), N).
-           artanh_cor[i, j] holds the breeding value of artanh(correlation) of the trait pair i for individual j.
-    n : Number of traits
-    N : Number of individuals
-
+    mean : np.ndarray
+        Breeding value of mean $A_m$, a 2D array of shape (n, N).
+        mean[i, j] holds the breeding value of mean of trait i for individual j.
+    ln_var : np.ndarray
+        Breeding value of ln(variance) $A_{lnv}$, a 2D array of shape (n, N).
+        ln_var[i, j] holds the breeding value of ln(variance) of trait i for individual j.
+    artanh_cor : np.ndarray
+        Breeding value of artanh(correlation) $A_c$, a 2D array of shape (choose(n, 2), N).
+        artanh_cor[i, j] holds the breeding value of artanh(correlation) of the trait pair i for individual j.
+    n : int
+        Number of traits.
+    N : int
+        Number of individuals.
 
     Methods
     -------
-    show() : Prints information of the BreedVal object.
-
+    show()
+        Prints information of the BreedVal object.
     """
     def __init__(self, mean: np.ndarray, ln_var: np.ndarray, artanh_cor: np.ndarray):
         self.mean = mean
@@ -116,30 +119,32 @@ class BreedVal:
 
 class Generation:
     """
-    A class to represent one generation of a population
+    A class to represent one generation of a population.
 
     Attributes
     ----------
-    genotype :      Genotype matrix of parents.
-                    Should be a 2D np.ndarray of shape (L, N).
-                    genotype[i, j] holds the genotype of individual j at locus i.
-    breed_val :     Breeding value of parents.
-                    Should be of type hanoi.BreedVal.
-    phenotype :     Phenotype matrix of parents.
-                    Should be a 2D np.ndarray of shape (N, n).
-                    phenotype[i, j] holds the phenotype of individual i for trait j.
-    fitness :       Fitness matrix of parents.
-                    Should be a 1D np.ndarray of length N.
-                    fitness[i] holds the fitness of individual i.
-    n_offspring :   Number of offspring.
-                    Should be a 1D np.ndarray of length N and the sum should be 2N.
-                    n_offspring[i] holds the number of offspring of parent individual i.
-                    Selfing is allowed, and in case of selfing, the number of offspring is counted twice.
-    genotype_next : Genotype matrix of offspring.
-                    Should be a 2D np.ndarray of shape (L, N).
-                    genotype_next[i, j] holds the genotype of individual j at locus i.
-    n : Number of traits
-    N : Number of individuals
+    genotype : np.ndarray
+        Genotype matrix of parents, a 2D array of shape (L, N).
+        genotype[i, j] holds the genotype of individual j at locus i.
+    breed_val : BreedVal
+        Breeding value of parents.
+    phenotype : np.ndarray
+        Phenotype matrix of parents, a 2D array of shape (N, n).
+        phenotype[i, j] holds the phenotype of individual i for trait j.
+    fitness : np.ndarray
+        Fitness of parents, a 1D array of length N.
+        fitness[i] holds the fitness of individual i.
+    n_offspring : np.ndarray
+        Number of offspring, a 1D array of length N whose sum should be 2N.
+        n_offspring[i] holds the number of offspring of parent individual i.
+        Selfing is allowed, and in case of selfing, the number of offspring is counted twice.
+    genotype_next : np.ndarray
+        Genotype matrix of offspring, a 2D array of shape (L, N).
+        genotype_next[i, j] holds the genotype of individual j at locus i.
+    n : int
+        Number of traits.
+    N : int
+        Number of individuals.
     """
     def __init__(self, genotype: np.ndarray, 
                  genotype_next: np.ndarray,
@@ -165,37 +170,40 @@ class Generation:
 
 class Generations(Generation):
     """
-    A class to represent one generation of a population
+    A class to represent multiple generations of a population.
 
     Attributes
     ----------
-    n_gen :         Number of generations.
-                    Should be positive int.
-    genotype :      Genotype matrices of parents.
-                    Should be a 3D np.ndarray of shape (n_gen, L, N).
-                    genotype[t, i, j] holds the genotype of individual j at locus i at generation t.
-    breed_val :     Breeding values of parents.
-                    Should be a list of n_gen elements of hanoi.BreedVal.
-                    breed_val[t] holds hanoi.BreedVal of generation t.
-    phenotype :     Phenotype matrices of parents.
-                    Should be a 3D np.ndarray of shape (n_gen, N, n).
-                    phenotype[t, i, j] holds the phenotype of individual i for trait j at generation t.
-    fitness :       Fitness matrices of parents.
-                    Should be a 2D np.ndarray of shape (n_gen, N).
-                    fitness[t, i] holds the fitness of individual i at generation t.
-    n_offspring :   Number of offspring matrix.
-                    Should be a 2D np.ndarray of shape (n_gen, N) and the sum(axis = 1) shuold be 2N.
-                    n_offspring[t, i] holds the number of offspring of parent individual i at generation t.
-                    Selfing is allowed, and in case of selfing, the number of offspring is counted twice.
-    genotype_next : Genotype matrices of offspring.
-                    Should be a 3D np.ndarray of shape (n_gen, L, N).
-                    genotype_next[t, i, j] holds the genotype of individual j at locus i at generation t.
-    n : Number of traits
-    N : Number of individuals
+    n_gen : int
+        Number of generations. Should be positive.
+    genotype : np.ndarray
+        Genotype matrices of parents, a 3D array of shape (n_gen, L, N).
+        genotype[t, i, j] holds the genotype of individual j at locus i at generation t.
+    breed_val : list of BreedVal
+        Breeding values of parents, a list of n_gen elements.
+        breed_val[t] holds the BreedVal of generation t.
+    phenotype : np.ndarray
+        Phenotype matrices of parents, a 3D array of shape (n_gen, N, n).
+        phenotype[t, i, j] holds the phenotype of individual i for trait j at generation t.
+    fitness : np.ndarray
+        Fitness matrices of parents, a 2D array of shape (n_gen, N).
+        fitness[t, i] holds the fitness of individual i at generation t.
+    n_offspring : np.ndarray
+        Number of offspring, a 2D array of shape (n_gen, N) whose sum over axis 1 should be 2N.
+        n_offspring[t, i] holds the number of offspring of parent individual i at generation t.
+        Selfing is allowed, and in case of selfing, the number of offspring is counted twice.
+    genotype_next : np.ndarray
+        Genotype matrices of offspring, a 3D array of shape (n_gen, L, N).
+        genotype_next[t, i, j] holds the genotype of individual j at locus i at generation t.
+    n : int
+        Number of traits.
+    N : int
+        Number of individuals.
 
     Methods
     -------
-    show() : Prints information of the Generations object.
+    show()
+        Prints information of the Generations object.
     """
     def __init__(self, *args, n_gen, **kwargs):
         super().__init__(*args, **kwargs)
@@ -229,14 +237,18 @@ class Generations(Generation):
 
 class SampleData:
     """
-    A class to represent sample data
+    A class to represent sample data.
 
     Attributes
     ----------
-    mut_effect : Sample MutEffect data.
-    geno :  2D np.ndarray for sample genotype data.
-    z_ref : Sample z_ref
-    c_ref : Sample c_ref
+    mut_effect : MutEffect
+        Sample mutation effect.
+    geno : np.ndarray
+        2D array of sample genotype data.
+    z_ref : np.ndarray
+        Sample z_ref.
+    c_ref : np.ndarray
+        Sample c_ref.
     """
     def __init__(self, mut_effect, geno, z_ref, c_ref):
         self.mut_effect = mut_effect
@@ -250,11 +262,17 @@ def comp_breed_val(mut_effect: MutEffect, genotype: np.ndarray):
     """
     Computes breeding value from mutation effect and genotype.
 
-    Args:
-        mut_effect : hanoi.MutEffect object representing mutation effect.
-        genotype :   2D np.ndarray representing a genotype table.
+    Parameters
+    ----------
+    mut_effect : MutEffect
+        Mutation effect.
+    genotype : np.ndarray
+        2D array representing a genotype table.
 
-    Returns: hanoi.BreedVal object representing breeding value
+    Returns
+    -------
+    BreedVal
+        Breeding value.
     """
     A_m = 1/2 * mut_effect.mean @ genotype
     A_lnv = 1/2 * mut_effect.ln_var @ genotype
@@ -271,14 +289,27 @@ def comp_varcov(breed_val: BreedVal, v_0, r_0=None):
     For trait pair k, correlation r_k = tanh(artanh(r_0[k]) + artanh_cor[k]).
     The covariance of traits i and j is r_k * sqrt(v_i * v_j).
 
-    Arguments:
-        breed_val : hanoi.BreedVal object representing breeding value.
-        v_0 :       1D array-like of n representing baseline variance of n traits for a genotype of 0000...
-                    Should be positive.
-        r_0 :       1D array-like of choose(n, 2) representing baseline correlation of trait pairs
-                    for a genotype of 0000... Should be in (-1, 1). Not needed if n = 1.
+    Parameters
+    ----------
+    breed_val : BreedVal
+        Breeding value.
+    v_0 : array-like
+        1D array-like of length n representing baseline variance of n traits
+        for a genotype of 0000... Should be positive.
+    r_0 : array-like, optional
+        1D array-like of length choose(n, 2) representing baseline correlation of trait pairs
+        for a genotype of 0000... Should be in (-1, 1). Not needed if n = 1.
 
-    Returns: 3D np.ndarray of (N, n, n) representing variance-covariance matrices.
+    Returns
+    -------
+    np.ndarray
+        3D array of shape (N, n, n) representing variance-covariance matrices.
+
+    Raises
+    ------
+    ValueError
+        If v_0 or r_0 has the wrong shape or an invalid value, if r_0 is missing for n > 1,
+        or if n > 2 and some variance-covariance matrix is not positive definite.
     """
     n, N = breed_val.n, breed_val.N
     v_0 = np.atleast_1d(np.asarray(v_0, dtype = np.float64))
@@ -314,11 +345,17 @@ def cov_mtx(var, cov):
     """
     Computes 2D variance-covariance matrix from variance and covariance.
 
-    Arguments:
-        var: 1D array-like of n representing variance of n traits.
-        cov: 1D array-like of choose(n, 2) representing covariance between n traits.
+    Parameters
+    ----------
+    var : array-like
+        1D array-like of length n representing variance of n traits.
+    cov : array-like
+        1D array-like of length choose(n, 2) representing covariance between n traits.
 
-    Returns: (n, n) np.ndarray representing variance-covariance matrix.
+    Returns
+    -------
+    np.ndarray
+        Array of shape (n, n) representing the variance-covariance matrix.
     """
     return squareform(cov) + np.diag(var)
 
