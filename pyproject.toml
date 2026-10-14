@@ -14,5 +14,8 @@ dependencies = [
         "scipy>=1.15"
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
 [tool.setuptools.packages.find]
 where = ["."]
