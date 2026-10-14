@@ -87,7 +87,7 @@ Use `hanoi.comp_varcov(breed_val, v_0, r_0)` to get the `(N, n, n)` variance-cov
 
 ## Main functions
 
-- `hanoi.sim_generations(n_gen, ..., record=True)` simulates many generations. With `record=True` it returns a `Generations` object, with `record=False` a list `[n_gen, last_generation]`, which is lighter on memory. `n_gen=0` runs until every locus is fixed (or `n_gen_max` is reached).
+- `hanoi.sim_generations(n_gen, ..., record=True)` simulates many generations. With `record=True` it returns a `Generations` object, with `record=False` a list `[n_gen, last_generation]`, which is lighter on memory. `n_gen=0` runs until every locus is fixed.
 - `hanoi.sim_generation(...)` simulates a single generation and returns a `Generation`.
 - `hanoi.run_replicates(n_reps, max_workers=..., seeds=None, **kwargs)` runs `sim_generations` many times in parallel processes; `kwargs` are passed on to `sim_generations`.
 - Building blocks: `comp_breed_val`, `sim_pheno`, `sim_mutation`, `sim_reproduction`.
@@ -113,12 +113,6 @@ Choose one with `fit_func=`; its own arguments are passed as extra keyword argum
 | `"fit_multimodal"` | `sigma`, `p`, `z_opt` | weighted sum of Gaussian peaks |
 | `"fit_step"` | `boxes` | fitness 1 inside any of the `(m, 2, n)` boxes, else 0 |
 | `"fit_sigmoid"` | `a`, `b` | logistic slope with centre `a` and steepness/direction `b` |
-| `"fit_gaus_circular"` | `sigma`, `z_opt` | Gaussian on a periodic trait (needs `circular=True, period=...`) |
-| `"fit_step_circular"` | `arcs` | step function on a periodic trait (needs `circular=True, period=...`) |
-
-### Circular traits
-
-For periodic traits (time of day, angles), pass `circular=True` and `period` (e.g. `24`, or `2*np.pi`). Phenotypes are then wrapped into `[-period/2, period/2)`.
 
 ## Note on the return of fully lethal generations
 

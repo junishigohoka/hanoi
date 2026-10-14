@@ -215,7 +215,9 @@ def sim_pheno(breed_val: BreedVal, mean_0, v_0, r_0=None):
     """
     varcov = comp_varcov(breed_val=breed_val, v_0=v_0, r_0=r_0) # (N, n, n)
     if breed_val.n == 1:
-        z = np.random.normal(mean_0 + breed_val.mean, np.sqrt(varcov[:, 0, 0])).T
+        loc = mean_0 + breed_val.mean               # (1, N)
+        sd = np.sqrt(varcov[:, 0, 0])               # (N,)
+        z = np.random.normal(loc[0], sd)[:, None]   # (N, 1)
         return z
     z = np.array([np.random.multivariate_normal(mean_0 + breed_val.mean[:,i], varcov[i]) for i in range(breed_val.N)])
     return z
