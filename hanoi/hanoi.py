@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from scipy.spatial.distance import squareform
+from itertools import combinations
 
 
 class MutEffect:
@@ -359,4 +360,69 @@ def cov_mtx(var, cov):
     """
     return squareform(cov) + np.diag(var)
 
+
+
+def comp_alpha_m(G_m, L_m_diag, mu, N):
+    """
+    Computes alpha_m (allelic effect on mean) that results in the diagonal of the given G_m under coalescent.
+    Note the sign of genetic covariance is not considered. Returned alpha is always positive.
+
+    Parameters
+    ----------
+    G_m : array-like
+        2D array-like of n x n representing the additive (co)variance of mean (the G matrix of mean).
+    L_m_diag : array-like
+        1D array-like of size n representing the number of loci controlling mean of n traits.
+    mu : float
+        mutation rate
+    N : int
+        Diploid population size
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (n,) where i-th element represents alpha_i.
+    """
+    G_m = np.asarray(G_m)
+    L_m_diag = np.asarray(L_m_diag)
+    return np.sqrt((2 * np.diag(G_m))/(mu * L_m_diag * (2 * N - 1)))
+
+
+def comp_L_ij(G_m, L_m_diag, mu, N):
+    """
+    Computes L_ij (the number of loci with pleiotropic allelic effect on traits i and j) that results in the given G_m.
+
+    Parameters
+    ----------
+    G_m : array-like
+        2D array-like of n x n representing the additive (co)variance of mean (the G matrix of mean).
+    L_m_diag : array-like
+        1D array-like of size n representing the number of loci controlling mean of n traits.
+    mu : float
+        mutation rate
+    N : int
+        Diploid population size
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (n,n) where i-th diagonal represents the number of loci with allelic effect on i-th trait (including pleiotropic loci), and element [i,j] represents the number of loci with pleiotropic effect on traits i and j.
+    """
+    G_m = np.asarray(G_m)
+    L_m_diag = np.asarray(L_m_diag)
+    # Number of traits
+    n = L_m_diag.size 
+    # Compute allelic effect alpha_m
+    alpha_m = comp_alpha_m(G_m, L_m_diag, mu, N) 
+    # Make output array
+    L_out = np.zeros((n,n))
+    np.fill_diagonal(L_out, L_m_diag)
+    # Compute L_ij
+    for i, j in combinations(range(n), 2):
+        G_ij = abs(G_m[i,j])
+        alpha_i = alpha_m[i]
+        alpha_j = alpha_m[j]
+        L_out[i, j] = (2 * G_ij)/(alpha_i * alpha_j * mu * (2 * N - 1))
+        L_out[j, i] = L_out[i, j]
+    return L_out
 
