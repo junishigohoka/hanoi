@@ -359,3 +359,63 @@ def run_replicates(n_reps, max_workers = os.cpu_count(), seeds = None, **kwargs)
             results[idx] = fut.result() # store in the correct slot
     return results
 
+
+
+
+def sim_genotype_coalescent(L, N, mu, seed=None):
+    """
+    Generates a genotype table based on coalescent.
+
+    Parameters
+    ----------
+    L : int
+        Number of loci.
+    N : int
+        Diploid population size.
+    mu : float
+        Mutation rate.
+    seed : int or None, optional
+        Random seed. If None (default), the result is not repeatable.
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (L, N) with the genotype of N individuals at L loci.
+
+    """
+    # random number generator; `rng` can be a seed (for repeatable results) or None
+    rng = np.random.default_rng(seed)
+
+    # theta = 4 N mu, as in coalescent theory
+    theta = 4 * N * mu
+
+    # prob[i] = probability that a locus has i copies of allele 1, for i = 0, 1, ..., 2N - 1
+    #prob = np.empty(2 * N)
+
+    # for i = 0, 1, ..., 2N - 1 the expected fraction of loci is theta / i
+    prob = np.zeros(2*N)
+    prob[1:] = theta / np.arange(1, 2 * N)
+    # the sum of theta / i was too big, so the probability of class 0 became negative
+    if prob.sum() > 1:
+        raise ValueError("theta * sum(1/i) > 1: mu is too large")
+    # fill monomorphic
+    prob[0] = 1 - prob.sum()
+
+
+    # distribute L loci over the classes; counts[i] = number of loci with i copies
+    counts = rng.multinomial(L, prob)
+
+    # one number per locus: how many copies of allele 1 it has
+    # e.g. counts = [3, 2, 1] gives copies = [0, 0, 0, 1, 1, 2]
+    copies = np.repeat(np.arange(2 * N), counts)
+    copies = rng.permutation(copies)
+
+    # empty genotype table: L rows (loci), N columns (individuals)
+    genotype = np.zeros((L, N), dtype=int)
+
+    for locus in range(L):
+        i = copies[locus]                                    # copies of allele 1 at this locus
+        chosen = rng.choice(2 * N, size=i, replace=False)    # which gene copies carry allele 1
+        for c in chosen:
+            genotype[locus, c // 2] += 1                            # add 1 to the individual who owns gene copy c
+    return genotype

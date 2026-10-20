@@ -14,6 +14,7 @@ Simulation
    hanoi.sim_pheno
    hanoi.sim_mutation
    hanoi.sim_reproduction
+   hanoi.sim_genotype_coalescent
 
 Noise model
 -----------
@@ -25,6 +26,16 @@ Noise model
    hanoi.comp_breed_val
    hanoi.comp_varcov
    hanoi.cov_mtx
+
+Coalescent calibration
+----------------------
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   hanoi.comp_alpha_m
+   hanoi.comp_L_ij
 
 Fitness functions
 -----------------
